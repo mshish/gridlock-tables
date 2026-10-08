@@ -17,6 +17,15 @@ behind it are in `docs/research/feasibility.md`.
 - Not planned: a custom Live Preview grid or whole-page horizontal canvas. See
   the feasibility doc for why.
 
+## Settings
+
+- **Minimum column width** / **Maximum column width** (4-120 characters,
+  defaults 6 and 60): clamp content-sized columns so a short column never
+  collapses to a sliver and a long-text column wraps instead of taking the
+  whole table. They set Obsidian's `--table-column-min-width` and
+  `--table-column-max-width` while the plugin is enabled, and apply without a
+  reload.
+
 ## Development
 
 ```sh

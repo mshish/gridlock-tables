@@ -3,3 +3,31 @@
  * Every rule is scoped under body.gridlock-tables-enabled so the settings
  * toggle restores native table rendering without a reload.
  */
+
+/*
+ * Clamped column widths. Obsidian defines both variables on `body`; this
+ * selector is more specific, so it wins while the plugin is enabled. The
+ * plugin sets --gridlock-col-min/max from settings; the fallbacks match the
+ * defaults in src/utils/columnLimits.ts.
+ */
+body.gridlock-tables-enabled {
+	--table-column-min-width: var(--gridlock-col-min, 6ch);
+	--table-column-max-width: var(--gridlock-col-max, 60ch);
+}
+
+/*
+ * Content-driven layout. Kept at the lowest specificity :where() allows so the
+ * Phase 2 pinned state (table-layout: fixed) overrides it without !important.
+ */
+body.gridlock-tables-enabled :where(.markdown-rendered, .cm-table-widget) :where(table) {
+	table-layout: auto;
+}
+
+/*
+ * Live Preview parity: Obsidian applies --table-column-max-width to Reading
+ * view cells but only --table-column-min-width to the Live Preview table
+ * widget's cells.
+ */
+body.gridlock-tables-enabled .markdown-source-view.mod-cm6 .cm-table-widget :is(th, td) {
+	max-width: var(--table-column-max-width);
+}
