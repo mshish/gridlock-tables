@@ -1,38 +1,53 @@
-import { App, PluginSettingTab, Setting } from 'obsidian';
-import MyPlugin from './main';
+import { App, PluginSettingTab, SettingDefinitionItem } from 'obsidian';
+import GridlockTablesPlugin from './main';
 
-export interface MyPluginSettings {
-	mySetting: string;
+export interface GridlockTablesSettings {
+	/** Master off switch. When false the plugin leaves tables fully native. */
+	enabled: boolean;
 }
 
-export const DEFAULT_SETTINGS: MyPluginSettings = {
-	mySetting: 'default',
+export const DEFAULT_SETTINGS: GridlockTablesSettings = {
+	enabled: true,
 };
 
-export class SampleSettingTab extends PluginSettingTab {
-	plugin: MyPlugin;
+type SettingKey = keyof GridlockTablesSettings;
 
-	constructor(app: App, plugin: MyPlugin) {
+/**
+ * Declarative settings tab (Obsidian 1.13+). Each setting is a definition so
+ * it shows up in Obsidian's settings search; add new settings here rather
+ * than in a display() override.
+ */
+export class GridlockTablesSettingTab extends PluginSettingTab {
+	plugin: GridlockTablesPlugin;
+
+	constructor(app: App, plugin: GridlockTablesPlugin) {
 		super(app, plugin);
 		this.plugin = plugin;
 	}
 
-	display(): void {
-		const { containerEl } = this;
+	getSettingDefinitions(): SettingDefinitionItem<SettingKey>[] {
+		return [
+			{
+				name: 'Enable plugin',
+				desc: 'Turn off to fall back to native Obsidian table rendering in every view.',
+				control: {
+					type: 'toggle',
+					key: 'enabled',
+					defaultValue: DEFAULT_SETTINGS.enabled,
+				},
+			},
+		];
+	}
 
-		containerEl.empty();
+	getControlValue(key: string): unknown {
+		return this.plugin.settings[key as SettingKey];
+	}
 
-		new Setting(containerEl)
-			.setName('Settings #1')
-			.setDesc("It's a secret")
-			.addText((text) =>
-				text
-					.setPlaceholder('Enter your secret')
-					.setValue(this.plugin.settings.mySetting)
-					.onChange(async (value) => {
-						this.plugin.settings.mySetting = value;
-						await this.plugin.saveSettings();
-					}),
-			);
+	async setControlValue(key: string, value: unknown): Promise<void> {
+		if (key === 'enabled') {
+			this.plugin.settings.enabled = Boolean(value);
+		}
+		await this.plugin.saveSettings();
+		this.plugin.applyEnabledState();
 	}
 }

@@ -1,11 +1,10 @@
 {
-	"id": "sample-plugin",
-	"name": "Sample Plugin",
-	"version": "1.0.0",
-	"minAppVersion": "1.0.0",
-	"description": "Demonstrates some of the capabilities of the Obsidian API.",
-	"author": "Obsidian",
-	"authorUrl": "https://obsidian.md",
-	"fundingUrl": "https://obsidian.md/pricing",
+	"id": "gridlock-tables",
+	"name": "Gridlock Tables",
+	"version": "0.1.0",
+	"minAppVersion": "1.14.4",
+	"description": "Content-sized table columns, overflow-only horizontal scroll, and pinned manual widths. OneNote-style tables in Reading view and Live Preview.",
+	"author": "Michael Sciscenti",
+	"authorUrl": "https://github.com/mshish",
 	"isDesktopOnly": false
 }
