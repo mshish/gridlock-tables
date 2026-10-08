@@ -1,8 +1,5 @@
 /*
-
-This CSS file will be included with your plugin, and
-available in the app when your plugin is enabled.
-
-If your plugin does not need CSS, delete this file.
-
-*/
+ * Gridlock Tables.
+ * Every rule is scoped under body.gridlock-tables-enabled so the settings
+ * toggle restores native table rendering without a reload.
+ */
