@@ -1,7 +1,7 @@
 {
 	"id": "gridlock-tables",
 	"name": "Gridlock Tables",
-	"version": "0.1.1",
+	"version": "0.1.2",
 	"minAppVersion": "1.14.4",
 	"description": "Size table columns to their content, let wide tables use the free space in the pane, and drag column edges to set widths that are saved with the note.",
 	"author": "Michael Sciscenti",
