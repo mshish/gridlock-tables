@@ -29,9 +29,34 @@ function selectors(css: string): string[] {
 	const stripped = css.replace(/\/\*[\s\S]*?\*\//g, '');
 	const out: string[] = [];
 	for (const match of stripped.matchAll(/([^{}]+)\{/g)) {
-		out.push(...splitSelectorList(match[1] ?? ''));
+		const prelude = (match[1] ?? '').trim();
+		if (prelude.startsWith('@')) continue;
+		out.push(...splitSelectorList(prelude));
 	}
 	return out;
+}
+
+/** Each `@container <query> { ... }` block: its query and its body. */
+function containerBlocks(css: string): { query: string; body: string; start: number; end: number }[] {
+	const out = [];
+	for (const match of css.matchAll(/@container ([^{]+)\{/g)) {
+		const open = (match.index ?? 0) + match[0].length;
+		let depth = 1;
+		let i = open;
+		while (depth > 0 && i < css.length) {
+			if (css[i] === '{') depth++;
+			else if (css[i] === '}') depth--;
+			i++;
+		}
+		out.push({ query: match[1] ?? '', body: css.slice(open, i - 1), start: match.index ?? 0, end: i });
+	}
+	return out;
+}
+
+/** The option ids declared in the Style Settings block. */
+function settingIds(css: string): string[] {
+	const block = /\/\* @settings([\s\S]*?)\*\//.exec(css)?.[1] ?? '';
+	return [...block.matchAll(/^\s+id: (\S+)$/gm)].map((m) => m[1] ?? '').filter((id) => id !== 'gridlock-tables');
 }
 
 describe('styles.css', () => {
@@ -57,11 +82,25 @@ describe('styles.css', () => {
 	});
 
 	it('uses every Style Settings variable in a rule', () => {
-		const block = /\/\* @settings([\s\S]*?)\*\//.exec(css)?.[1] ?? '';
-		const ids = [...block.matchAll(/^\s+id: (\S+)$/gm)].map((m) => m[1]).filter((id) => id !== 'gridlock-tables');
+		const ids = settingIds(css);
 		expect(ids.length).toBeGreaterThan(0);
 		const rules = css.replace(/\/\*[\s\S]*?\*\//g, '');
 		expect(ids.filter((id) => !rules.includes(`var(--${id}`))).toEqual([]);
+	});
+
+	it('applies a Style Settings option only while that option is set', () => {
+		// The rules outrank Obsidian's .markdown-rendered td/th, so an option
+		// applied with a fallback would override themes and snippets even unset.
+		const rules = css.replace(/\/\*[\s\S]*?\*\//g, '');
+		const ids = settingIds(css);
+		const blocks = containerBlocks(rules);
+		let outside = rules;
+		for (const b of [...blocks].reverse()) outside = outside.slice(0, b.start) + outside.slice(b.end);
+		expect(ids.filter((id) => outside.includes(`--${id}`))).toEqual([]);
+		const misplaced = blocks.flatMap((b) =>
+			ids.filter((id) => b.body.includes(`var(--${id}`) && !b.query.includes(`style(--${id})`)),
+		);
+		expect(misplaced).toEqual([]);
 	});
 
 	it('lets wide tables break out past the readable line', () => {
