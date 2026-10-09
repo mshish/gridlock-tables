@@ -54,6 +54,7 @@ export default class GridlockTablesPlugin extends Plugin {
 
 		const listen = (doc: Document) => {
 			this.registerDomEvent(doc, 'pointerdown', this.resize.onPointerDown, { capture: true });
+			this.registerDomEvent(doc, 'pointermove', this.resize.onPointerMove, { passive: true });
 			for (const type of ['mousedown', 'touchstart', 'click', 'dblclick'] as const) {
 				this.registerDomEvent(doc, type, this.resize.swallow, { capture: true });
 			}

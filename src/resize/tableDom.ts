@@ -11,6 +11,8 @@ export const HANDLE_CLASS = 'gridlock-col-resize';
 export const COLGROUP_CLASS = 'gridlock-colgroup';
 export const PINNED_CLASS = 'gridlock-pinned';
 export const RESIZING_CLASS = 'gridlock-resizing';
+/** On a table while a mouse is over one of its column edges (see ResizeController.onPointerMove). */
+export const EDGE_HOVER_CLASS = 'gridlock-edge-hover';
 export const MEASURE_MAX_CLASS = 'gridlock-measure-max';
 export const MEASURE_MIN_CLASS = 'gridlock-measure-min';
 export const KEY_ATTR = 'data-gridlock-key';

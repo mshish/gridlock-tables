@@ -317,3 +317,9 @@ body.gridlock-tables-enabled .markdown-preview-view:not(.gridlock-tables-off) > 
 body.gridlock-tables-enabled .markdown-source-view.mod-cm6:not(.gridlock-tables-off) > .cm-editor > .cm-scroller > .cm-sizer > .cm-contentContainer > .cm-content > .cm-table-widget.gridlock-resizing {
 	pointer-events: none;
 }
+
+/* A mouse over a column edge in any row (see onPointerMove in src/resize/controller.ts). */
+body.gridlock-tables-enabled .markdown-preview-view:not(.gridlock-tables-off) > .markdown-preview-sizer > .el-table > table.gridlock-edge-hover :is(th, td, th *, td *),
+body.gridlock-tables-enabled .markdown-source-view.mod-cm6:not(.gridlock-tables-off) > .cm-editor > .cm-scroller > .cm-sizer > .cm-contentContainer > .cm-content > .cm-table-widget > .table-wrapper > table.gridlock-edge-hover :is(th, td, th *, td *) {
+	cursor: col-resize;
+}
