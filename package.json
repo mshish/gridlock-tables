@@ -1,6 +1,6 @@
 {
   "name": "gridlock-tables",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Obsidian plugin: content-sized table columns, overflow-only horizontal scroll, and pinned manual widths.",
   "main": "main.js",
   "type": "module",
