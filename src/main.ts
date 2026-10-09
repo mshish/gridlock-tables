@@ -1,4 +1,4 @@
-import { Editor, MarkdownView, Notice, Plugin, TFile } from 'obsidian';
+import { MarkdownView, Notice, Plugin, TFile } from 'obsidian';
 import { ResizeController } from './resize/controller';
 import { livePreviewExtension } from './resize/livePreview';
 import { readingViewProcessor } from './resize/readingView';
@@ -69,7 +69,7 @@ export default class GridlockTablesPlugin extends Plugin {
 				// so those are re-applied without reading the disk.
 				if (!(file instanceof TFile) || file.extension !== 'md') return;
 				if (!this.resize.showsInReadingView(file.path)) return;
-				if (this.openEditor(file.path)) {
+				if (this.openEditorView(file.path)) {
 					this.resize.reapply(file.path);
 					return;
 				}
@@ -134,17 +134,26 @@ export default class GridlockTablesPlugin extends Plugin {
 	 * rewritten atomically with Vault.process.
 	 */
 	private async writeWidthComment(path: string, index: number, widths: PinnedWidths): Promise<boolean> {
-		const editor = this.openEditor(path);
-		if (editor) {
+		const view = this.openEditorView(path);
+		if (view) {
+			const editor = view.editor;
 			const lines = editor.getValue().split('\n');
 			if (tableStartLines(lines)[index] === undefined) return this.reportMissingTable(path);
 			const edit = widthCommentEdit(lines, index, widths);
 			if (edit) {
+				const scroll = editor.getScrollInfo();
 				editor.replaceRange(
 					edit.insert.map((line) => `${line}\n`).join(''),
 					{ line: edit.start, ch: 0 },
 					{ line: edit.start + edit.deleteCount, ch: 0 },
 				);
+				// replaceRange scrolls the cursor into view, which jumps the note away
+				// from the table just resized. In Obsidian 1.14.4 CodeMirror does that
+				// scroll in its next measure frame, so a synchronous restore is
+				// overridden; the position is put back in a frame after it.
+				view.containerEl.win.requestAnimationFrame(() => {
+					if (view.file?.path === path) editor.scrollTo(scroll.left, scroll.top);
+				});
 			}
 			return true;
 		}
@@ -163,15 +172,15 @@ export default class GridlockTablesPlugin extends Plugin {
 		return found || this.reportMissingTable(path);
 	}
 
-	/** The editor a note is open in (Source mode or Live Preview), if any. */
-	private openEditor(path: string): Editor | undefined {
-		let editor: Editor | undefined;
+	/** The view showing a note in an editor (Source mode or Live Preview), if any. */
+	private openEditorView(path: string): MarkdownView | undefined {
+		let view: MarkdownView | undefined;
 		this.app.workspace.iterateAllLeaves((leaf) => {
-			if (!editor && leaf.view instanceof MarkdownView && leaf.view.file?.path === path && leaf.view.getMode() === 'source') {
-				editor = leaf.view.editor;
+			if (!view && leaf.view instanceof MarkdownView && leaf.view.file?.path === path && leaf.view.getMode() === 'source') {
+				view = leaf.view;
 			}
 		});
-		return editor;
+		return view;
 	}
 
 	private reportMissingTable(path: string): false {
