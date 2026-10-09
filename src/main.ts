@@ -1,5 +1,6 @@
 import { MarkdownView, Notice, Plugin, TFile } from 'obsidian';
 import { ResizeController } from './resize/controller';
+import { hideWidthComments } from './resize/hideComments';
 import { livePreviewExtension } from './resize/livePreview';
 import { readingViewProcessor } from './resize/readingView';
 import { ENABLED_CLASS } from './scope';
@@ -50,7 +51,7 @@ export default class GridlockTablesPlugin extends Plugin {
 				this.app.workspace.iterateAllLeaves((leaf) => callback(leaf.view.containerEl)),
 		});
 		this.registerMarkdownPostProcessor(readingViewProcessor(this.resize, () => this.settings.enabled));
-		this.registerEditorExtension(livePreviewExtension(this.resize));
+		this.registerEditorExtension([livePreviewExtension(this.resize), hideWidthComments]);
 
 		const listen = (doc: Document) => {
 			this.registerDomEvent(doc, 'pointerdown', this.resize.onPointerDown, { capture: true });

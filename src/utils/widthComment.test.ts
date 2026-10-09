@@ -2,6 +2,8 @@ import { describe, it, expect } from 'vitest';
 import {
 	formatWidthComment,
 	parseWidthComment,
+	untouchedLines,
+	widthCommentRanges,
 	widthsFromComments,
 	writeWidthComment,
 } from './widthComment';
@@ -57,6 +59,51 @@ describe('widthsFromComments', () => {
 	it('does not reach past text between the comment and the table', () => {
 		const lines = ['<!-- gridlock-cols: 5ch auto auto -->', 'Some text.', '', ...TABLE];
 		expect(widthsFromComments(lines).has(0)).toBe(false);
+	});
+});
+
+describe('widthCommentRanges', () => {
+	it('covers each comment and its blank line, up to the table', () => {
+		const lines = ['Intro', '<!-- gridlock-cols: 10ch auto auto -->', '', ...TABLE, '', '<!-- gridlock-cols: 4ch -->', ...TABLE];
+		expect(widthCommentRanges(lines)).toEqual([
+			{ from: 1, to: 2 },
+			{ from: 7, to: 7 },
+		]);
+	});
+
+	it('leaves out other comments, malformed ones and comments away from a table', () => {
+		const lines = [
+			'<!-- note to self -->',
+			'',
+			...TABLE,
+			'',
+			'<!-- gridlock-cols: 120px -->',
+			'',
+			...TABLE,
+			'<!-- gridlock-cols: 9ch -->',
+			'Some text.',
+		];
+		expect(widthCommentRanges(lines)).toEqual([]);
+	});
+});
+
+describe('untouchedLines', () => {
+	const ranges = [
+		{ from: 1, to: 2 },
+		{ from: 8, to: 9 },
+	];
+
+	it('returns every line of every range when nothing is selected there', () => {
+		expect(untouchedLines(ranges, [{ from: 5, to: 5 }])).toEqual([1, 2, 8, 9]);
+	});
+
+	it('keeps a range whole while a cursor is on any of its lines', () => {
+		expect(untouchedLines(ranges, [{ from: 2, to: 2 }])).toEqual([8, 9]);
+		expect(untouchedLines(ranges, [{ from: 8, to: 8 }])).toEqual([1, 2]);
+	});
+
+	it('counts a selection that spans into a range', () => {
+		expect(untouchedLines(ranges, [{ from: 0, to: 1 }, { from: 9, to: 12 }])).toEqual([]);
 	});
 });
 
