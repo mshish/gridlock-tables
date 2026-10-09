@@ -1,0 +1,47 @@
+import { readFileSync } from 'node:fs';
+import { describe, it, expect } from 'vitest';
+
+const css = readFileSync(new URL('../styles.css', import.meta.url), 'utf8');
+
+const ENABLED_SCOPE = 'body.gridlock-tables-enabled';
+
+/** Split a selector list on top-level commas, not those inside :is()/:where(). */
+function splitSelectorList(list: string): string[] {
+	const parts: string[] = [];
+	let depth = 0;
+	let start = 0;
+	for (let i = 0; i < list.length; i++) {
+		const ch = list[i];
+		if (ch === '(') depth++;
+		else if (ch === ')') depth--;
+		else if (ch === ',' && depth === 0) {
+			parts.push(list.slice(start, i));
+			start = i + 1;
+		}
+	}
+	parts.push(list.slice(start));
+	return parts.map((s) => s.trim());
+}
+
+/** Every selector of every rule in styles.css, comments stripped. */
+function selectors(css: string): string[] {
+	const stripped = css.replace(/\/\*[\s\S]*?\*\//g, '');
+	const out: string[] = [];
+	for (const match of stripped.matchAll(/([^{}]+)\{/g)) {
+		out.push(...splitSelectorList(match[1] ?? ''));
+	}
+	return out;
+}
+
+describe('styles.css', () => {
+	it('scopes every rule under the enabled class', () => {
+		const all = selectors(css);
+		expect(all.length).toBeGreaterThan(0);
+		expect(all.filter((s) => !s.startsWith(ENABLED_SCOPE))).toEqual([]);
+	});
+
+	it('lets wide tables break out past the readable line', () => {
+		expect(css).toContain('max-width: calc((100cqw + 100%) / 2)');
+		expect(css).toContain('container-type: inline-size');
+	});
+});
