@@ -26,6 +26,17 @@ behind it are in `docs/research/feasibility.md`.
   `--table-column-max-width` while the plugin is enabled, and apply without a
   reload.
 
+## Turning it off for one note
+
+Add the `gridlock-tables-off` CSS class to the note's frontmatter and its
+tables render natively while the plugin stays on everywhere else:
+
+```yaml
+---
+cssclasses: [gridlock-tables-off]
+---
+```
+
 ## Development
 
 ```sh
