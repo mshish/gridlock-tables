@@ -31,7 +31,10 @@ is nothing to set up unless you want to.
 
 - **Resize a column**: with a mouse, hover over any column edge until the
   cursor changes, then drag. On a touch screen, drag the handle at the right
-  edge of the header cell.
+  edge of the header cell. The other columns keep their current width, so the
+  table grows or shrinks by the amount you drag, as in OneNote. From then on
+  that table's columns keep their widths when you edit the text; delete the
+  width comment to go back to automatic sizing.
 - **Fit a column to its content**: double-click (or double-tap) the column
   edge.
 - **Go back to automatic widths**: delete the width comment above the table

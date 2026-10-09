@@ -48,6 +48,24 @@ export function pinColumn(
 	return next;
 }
 
+/**
+ * Pins every unpinned column at its rendered width, keeping existing pins.
+ * Applied before a resize so that, as in OneNote, the other columns keep the
+ * width they had on screen and the table grows or shrinks by the drag alone.
+ */
+export function freezeColumns(
+	widths: PinnedWidths,
+	renderedCh: readonly number[],
+	columnCount: number,
+): PinnedWidths {
+	const next: PinnedWidths = [];
+	for (let i = 0; i < columnCount; i++) {
+		const rendered = renderedCh[i];
+		next.push(widths[i] ?? (rendered === undefined ? null : roundCh(clampPin(rendered))));
+	}
+	return next;
+}
+
 /** True when any column inside the table is pinned. */
 export function hasPins(widths: PinnedWidths, columnCount: number): boolean {
 	return widths.slice(0, columnCount).some((w) => w !== null);

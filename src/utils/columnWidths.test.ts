@@ -5,6 +5,7 @@ import {
 	autoFitCh,
 	colgroupWidths,
 	dragWidthCh,
+	freezeColumns,
 	hasPins,
 	isDoubleTap,
 	pinColumn,
@@ -47,6 +48,24 @@ describe('pinColumn', () => {
 
 	it('ignores an out-of-range column', () => {
 		expect(pinColumn([8], 5, 12, 2)).toEqual([8, null]);
+	});
+});
+
+describe('freezeColumns', () => {
+	it('pins every unpinned column at its rendered width', () => {
+		expect(freezeColumns([], [6.04, 22.5, 61.3], 3)).toEqual([6, 22.5, 61.3]);
+	});
+
+	it('keeps existing pins instead of the rendered width', () => {
+		expect(freezeColumns([8, null, 30], [9.4, 22.5, 31.2], 3)).toEqual([8, 22.5, 30]);
+	});
+
+	it('clamps to the pin range and sizes to the column count', () => {
+		expect(freezeColumns([null, null, 5, 7], [0, 1000, 4], 3)).toEqual([MIN_PIN_CH, MAX_PIN_CH, 5]);
+	});
+
+	it('leaves a column with no measurement unpinned', () => {
+		expect(freezeColumns([], [12], 2)).toEqual([12, null]);
 	});
 });
 
