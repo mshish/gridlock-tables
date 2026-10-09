@@ -79,3 +79,81 @@ body.gridlock-tables-enabled .markdown-source-view.mod-cm6.is-readable-line-widt
 	width: max-content;
 	max-width: calc((100cqw - min(var(--file-line-width), 100cqw)) / 2 + 100% + var(--size-4-4));
 }
+
+/*
+ * Pinned widths (resize handles, src/resize/). A pinned table switches to the
+ * fixed layout so dragged widths hold. Chrome ignores table-layout: fixed on a
+ * table whose width is auto, so the table takes width: max-content: pinned
+ * columns get exactly their <col> width and unpinned columns keep their
+ * clamped max-content width. A table wider than the pane scrolls inside its
+ * own container as before. Each <col> carries its width in ch as
+ * --gridlock-col-width; unpinned columns have none.
+ */
+body.gridlock-tables-enabled .markdown-preview-view:not(.gridlock-tables-off) > .markdown-preview-sizer > .el-table > table.gridlock-pinned,
+body.gridlock-tables-enabled .markdown-source-view.mod-cm6:not(.gridlock-tables-off) > .cm-editor > .cm-scroller > .cm-sizer > .cm-contentContainer > .cm-content > .cm-table-widget > .table-wrapper > table.gridlock-pinned {
+	table-layout: fixed;
+	width: max-content;
+}
+
+body.gridlock-tables-enabled .markdown-preview-view:not(.gridlock-tables-off) > .markdown-preview-sizer > .el-table > table.gridlock-pinned > colgroup > col,
+body.gridlock-tables-enabled .markdown-source-view.mod-cm6:not(.gridlock-tables-off) > .cm-editor > .cm-scroller > .cm-sizer > .cm-contentContainer > .cm-content > .cm-table-widget > .table-wrapper > table.gridlock-pinned > colgroup > col {
+	width: var(--gridlock-col-width);
+}
+
+/* A pinned column narrower than a long word wraps the word instead of spilling. */
+body.gridlock-tables-enabled .markdown-preview-view:not(.gridlock-tables-off) > .markdown-preview-sizer > .el-table > table.gridlock-pinned :is(th, td),
+body.gridlock-tables-enabled .markdown-source-view.mod-cm6:not(.gridlock-tables-off) > .cm-editor > .cm-scroller > .cm-sizer > .cm-contentContainer > .cm-content > .cm-table-widget > .table-wrapper > table.gridlock-pinned :is(th, td) {
+	overflow-wrap: anywhere;
+}
+
+/* Auto-fit measures a column with the table laid out at max- and min-content. */
+body.gridlock-tables-enabled .markdown-preview-view:not(.gridlock-tables-off) > .markdown-preview-sizer > .el-table > table.gridlock-measure-max,
+body.gridlock-tables-enabled .markdown-source-view.mod-cm6:not(.gridlock-tables-off) > .cm-editor > .cm-scroller > .cm-sizer > .cm-contentContainer > .cm-content > .cm-table-widget > .table-wrapper > table.gridlock-measure-max {
+	width: max-content;
+}
+
+body.gridlock-tables-enabled .markdown-preview-view:not(.gridlock-tables-off) > .markdown-preview-sizer > .el-table > table.gridlock-measure-min,
+body.gridlock-tables-enabled .markdown-source-view.mod-cm6:not(.gridlock-tables-off) > .cm-editor > .cm-scroller > .cm-sizer > .cm-contentContainer > .cm-content > .cm-table-widget > .table-wrapper > table.gridlock-measure-min {
+	width: min-content;
+}
+
+/*
+ * Resize handles: a strip along the right edge of each header cell. It sits
+ * inside the cell because Reading view clips header cells (overflow: hidden),
+ * and below Obsidian's own .table-col-drag-handle, which sits above the cell.
+ * touch-action: none keeps a touch drag on the handle from scrolling the pane.
+ */
+body.gridlock-tables-enabled .markdown-preview-view:not(.gridlock-tables-off) > .markdown-preview-sizer > .el-table > table > thead > tr > th {
+	position: relative;
+}
+
+body.gridlock-tables-enabled .markdown-preview-view:not(.gridlock-tables-off) > .markdown-preview-sizer > .el-table > table > thead > tr > th > .gridlock-col-resize,
+body.gridlock-tables-enabled .markdown-source-view.mod-cm6:not(.gridlock-tables-off) > .cm-editor > .cm-scroller > .cm-sizer > .cm-contentContainer > .cm-content > .cm-table-widget > .table-wrapper > table > thead > tr > th > .gridlock-col-resize {
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	right: 0;
+	width: var(--size-4-2);
+	z-index: 1;
+	cursor: col-resize;
+	touch-action: none;
+	user-select: none;
+	pointer-events: auto;
+}
+
+body.gridlock-tables-enabled.is-mobile .markdown-preview-view:not(.gridlock-tables-off) > .markdown-preview-sizer > .el-table > table > thead > tr > th > .gridlock-col-resize,
+body.gridlock-tables-enabled.is-mobile .markdown-source-view.mod-cm6:not(.gridlock-tables-off) > .cm-editor > .cm-scroller > .cm-sizer > .cm-contentContainer > .cm-content > .cm-table-widget > .table-wrapper > table > thead > tr > th > .gridlock-col-resize {
+	width: var(--size-4-4);
+}
+
+body.gridlock-tables-enabled .markdown-preview-view:not(.gridlock-tables-off) > .markdown-preview-sizer > .el-table > table > thead > tr > th > .gridlock-col-resize:is(:hover, .is-active),
+body.gridlock-tables-enabled .markdown-source-view.mod-cm6:not(.gridlock-tables-off) > .cm-editor > .cm-scroller > .cm-sizer > .cm-contentContainer > .cm-content > .cm-table-widget > .table-wrapper > table > thead > tr > th > .gridlock-col-resize:is(:hover, .is-active) {
+	background-color: var(--interactive-accent);
+	opacity: 0.5;
+}
+
+/* While a column is dragged, the table's scroll container takes no pointer input. */
+body.gridlock-tables-enabled .markdown-preview-view:not(.gridlock-tables-off) > .markdown-preview-sizer > .el-table.gridlock-resizing,
+body.gridlock-tables-enabled .markdown-source-view.mod-cm6:not(.gridlock-tables-off) > .cm-editor > .cm-scroller > .cm-sizer > .cm-contentContainer > .cm-content > .cm-table-widget.gridlock-resizing {
+	pointer-events: none;
+}
