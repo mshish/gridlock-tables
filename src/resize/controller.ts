@@ -14,10 +14,11 @@ import {
 	pinColumn,
 	pxToCh,
 } from '../utils/columnWidths';
-import { gestureEnd, startsGesture } from '../utils/gesture';
+import { columnEdgeAt, gestureEnd, startsGesture } from '../utils/gesture';
 import { parseTableKey } from '../utils/tableKey';
 import { WidthStore } from '../utils/widthStore';
 import {
+	EDGE_HOVER_CLASS,
 	HANDLE_CLASS,
 	KEY_ATTR,
 	RESIZING_CLASS,
@@ -50,6 +51,20 @@ function handleOf(target: EventTarget | null): HTMLElement | null {
 	return node.closest<HTMLElement>(`.${HANDLE_CLASS}`);
 }
 
+/**
+ * The active table a pointer is over and the column whose right edge it is
+ * on, measured against the header cells, or null. Cells of a table nested
+ * inside a cell belong to that nested table.
+ */
+function edgeAt(target: EventTarget | null, x: number): { table: HTMLTableElement; col: number } | null {
+	const node = target as Node | null;
+	if (!node?.instanceOf(HTMLElement)) return null;
+	const table = node.closest<HTMLElement>('td, th')?.closest<HTMLTableElement>('table');
+	if (!table || !isActiveTable(table)) return null;
+	const col = columnEdgeAt(headerCells(table).map((cell) => cell.getBoundingClientRect().right), x);
+	return col < 0 ? null : { table, col };
+}
+
 /** A pointer that moves less than this many px is a tap, not a drag. */
 const DRAG_THRESHOLD_PX = 3;
 
@@ -62,6 +77,10 @@ export class ResizeController {
 	 * including the colgroup a drag inserts, and must not revert to the store.
 	 */
 	private readonly dragging = new WeakMap<HTMLTableElement, PinnedWidths>();
+	/** The table whose edge the last pointerdown grabbed from a body row. */
+	private edgeGestureTable: HTMLTableElement | null = null;
+	/** The table showing the edge resize cursor. */
+	private edgeHover: HTMLTableElement | null = null;
 
 	constructor(private readonly host: ResizeHost) {}
 
@@ -122,19 +141,51 @@ export class ResizeController {
 	 * event unless it starts on a handle of an active table.
 	 */
 	onPointerDown = (evt: PointerEvent) => {
-		const handle = handleOf(evt.target);
+		this.edgeGestureTable = null;
+		let handle = handleOf(evt.target);
+		let edgeTable: HTMLTableElement | null = null;
+		if (!handle && evt.pointerType === 'mouse') {
+			// With a mouse a column edge can be grabbed in any row; it drives the
+			// same gesture as that column's header handle. Touch keeps to the
+			// handles so a swipe near a cell border still scrolls the table.
+			const edge = edgeAt(evt.target, evt.clientX);
+			const header = edge ? headerCells(edge.table)[edge.col] : undefined;
+			handle = header?.querySelector<HTMLElement>(`:scope > .${HANDLE_CLASS}`) ?? null;
+			if (handle && edge) edgeTable = edge.table;
+		}
 		const cell = handle?.parentElement;
 		const table = handle?.closest('table');
 		if (!handle || !cell || !table || !isActiveTable(table)) return;
 		if (!startsGesture(evt)) return;
+		this.edgeGestureTable = edgeTable;
 		evt.preventDefault();
 		evt.stopPropagation();
 		this.startGesture(evt, handle, cell, table);
 	};
 
-	/** Keep clicks, double-clicks and touches on a handle away from the table widget. */
+	/**
+	 * Keep clicks, double-clicks and touches on a handle away from the table
+	 * widget, and the clicks that follow grabbing an edge in a body row.
+	 */
 	swallow = (evt: Event) => {
-		if (handleOf(evt.target)) evt.stopPropagation();
+		if (handleOf(evt.target)) {
+			evt.stopPropagation();
+			return;
+		}
+		// A keyboard-activated click has detail 0 and no pointerdown before it.
+		const target = evt.target as Node | null;
+		const fromPointer = (evt as UIEvent).detail > 0;
+		if (fromPointer && target && this.edgeGestureTable?.contains(target)) evt.stopPropagation();
+	};
+
+	/** Show the resize cursor while a mouse is over a column edge in any row. */
+	onPointerMove = (evt: PointerEvent) => {
+		if (evt.pointerType !== 'mouse' || evt.buttons !== 0) return;
+		const table = edgeAt(evt.target, evt.clientX)?.table ?? null;
+		if (table === this.edgeHover) return;
+		this.edgeHover?.removeClass(EDGE_HOVER_CLASS);
+		table?.addClass(EDGE_HOVER_CLASS);
+		this.edgeHover = table;
 	};
 
 	private startGesture(down: PointerEvent, handle: HTMLElement, cell: HTMLElement, table: HTMLTableElement) {
