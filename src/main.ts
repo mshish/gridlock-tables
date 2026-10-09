@@ -148,9 +148,12 @@ export default class GridlockTablesPlugin extends Plugin {
 					{ line: edit.start + edit.deleteCount, ch: 0 },
 				);
 				// replaceRange scrolls the cursor into view, which jumps the note away
-				// from the table just resized. CodeMirror does that scroll in its next
-				// measure frame, so the position is put back in a frame after it.
-				view.containerEl.win.requestAnimationFrame(() => editor.scrollTo(scroll.left, scroll.top));
+				// from the table just resized. In Obsidian 1.14.4 CodeMirror does that
+				// scroll in its next measure frame, so a synchronous restore is
+				// overridden; the position is put back in a frame after it.
+				view.containerEl.win.requestAnimationFrame(() => {
+					if (view.file?.path === path) editor.scrollTo(scroll.left, scroll.top);
+				});
 			}
 			return true;
 		}
