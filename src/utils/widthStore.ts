@@ -61,19 +61,23 @@ export class RecordWidthStore implements WidthStore {
 	}
 }
 
-/** Rewrites the gridlock-cols comment above table `index` of the note at `path`. */
-export type CommentWriter = (path: string, index: number, widths: PinnedWidths) => void;
+/**
+ * Rewrites the gridlock-cols comment above table `index` of the note at `path`.
+ * Resolves true once the note says `widths`, false if it could not be written.
+ */
+export type CommentWriter = (path: string, index: number, widths: PinnedWidths) => Promise<boolean>;
 
 /**
  * Pins kept in the notes themselves, as a gridlock-cols comment above each
  * table (see widthComment.ts). Widths are read from the source every time a
  * note renders, so editing or deleting a comment by hand takes effect on the
- * next render. While `inNote()` is false, every call goes to `record`
- * (data.json) instead.
+ * next render.
  *
- * A table with no comment falls back to `record`, which still holds pins saved
- * before widths were written to notes; saving a table's pins to its note drops
- * that record entry.
+ * Both stores are always read, so switching the setting never hides a width:
+ * while `inNote()` a comment wins over `record` (data.json), otherwise
+ * `record` wins over a comment. Saving goes to the preferred store only. A
+ * table's `record` entry is dropped once its comment is confirmed written,
+ * never before, so a failed write loses nothing.
  */
 export class NoteWidthStore implements WidthStore {
 	/** Pins read from comments, by tableKey(), for every note seen so far. */
@@ -91,7 +95,7 @@ export class NoteWidthStore implements WidthStore {
 	}
 
 	get(key: string): PinnedWidths | undefined {
-		if (!this.inNote()) return this.record.get(key);
+		if (!this.inNote()) return this.record.get(key) ?? this.fromNotes.get(key);
 		return this.fromNotes.get(key) ?? this.record.get(key);
 	}
 
@@ -102,10 +106,18 @@ export class NoteWidthStore implements WidthStore {
 			return;
 		}
 		const clean = sanitizeWidths(widths);
+		const previous = this.fromNotes.get(key);
 		if (clean) this.fromNotes.set(key, clean);
 		else this.fromNotes.delete(key);
-		this.write(target.path, target.index, clean ?? []);
-		if (this.record.get(key)) this.record.set(key, []);
+		void this.write(target.path, target.index, clean ?? []).then((written) => {
+			if (written) {
+				if (this.record.get(key)) this.record.set(key, []);
+			} else if (this.fromNotes.get(key) === clean) {
+				// Not written: show what the note still says.
+				if (previous) this.fromNotes.set(key, previous);
+				else this.fromNotes.delete(key);
+			}
+		});
 	}
 
 	/** Follow a renamed file, or forget a deleted one (newPath null). */

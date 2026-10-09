@@ -79,8 +79,25 @@ export class ResizeController {
 	 * so a table whose comment was edited elsewhere would otherwise keep stale
 	 * widths.
 	 */
+	/** True when a decorated table of this note is open in a Reading view. */
+	showsInReadingView(path: string): boolean {
+		let shown = false;
+		this.host.forEachViewRoot((root) => {
+			if (shown) return;
+			root.querySelectorAll(`.markdown-preview-view table[${KEY_ATTR}]`).forEach((table) => {
+				if (parseTableKey(table.getAttribute(KEY_ATTR) ?? '')?.path === path) shown = true;
+			});
+		});
+		return shown;
+	}
+
 	refreshSource(path: string, lines: readonly string[]) {
 		this.observeSource(path, lines);
+		this.reapply(path);
+	}
+
+	/** Re-apply the stored widths to every open copy of a note's tables. */
+	reapply(path: string) {
 		this.host.forEachViewRoot((root) => {
 			root.querySelectorAll<HTMLTableElement>(`table[${KEY_ATTR}]`).forEach((table) => {
 				const key = table.getAttribute(KEY_ATTR);

@@ -49,6 +49,11 @@ Choose **In plugin data** under **Save column widths** to leave your Markdown
 untouched. Widths are then kept in the plugin's `data.json`, by note path and
 table position.
 
+Switching this setting moves nothing: widths already saved either way keep
+showing, and the next resize saves to the place you chose. A table resized
+while widths went to plugin data keeps that width even after its comment is
+deleted, until you resize it again.
+
 ## Turning it off for one note
 
 Add the `gridlock-tables-off` CSS class to the note's frontmatter and its

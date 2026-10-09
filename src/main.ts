@@ -14,6 +14,7 @@ import {
 	columnLimitVars,
 } from './utils/columnLimits';
 import { PinnedWidths } from './utils/columnWidths';
+import { tableStartLines } from './utils/tableKey';
 import { widthCommentEdit, writeWidthComment } from './utils/widthComment';
 import { NoteWidthStore, RecordWidthStore } from './utils/widthStore';
 
@@ -62,7 +63,16 @@ export default class GridlockTablesPlugin extends Plugin {
 
 		this.registerEvent(
 			this.app.vault.on('modify', (file) => {
+				// Only Reading view needs this: it re-renders just the sections that
+				// changed. A note open in an editor already has fresh widths in the
+				// store (the editor re-reads its own, newer, document on every change),
+				// so those are re-applied without reading the disk.
 				if (!(file instanceof TFile) || file.extension !== 'md') return;
+				if (!this.resize.showsInReadingView(file.path)) return;
+				if (this.openEditor(file.path)) {
+					this.resize.reapply(file.path);
+					return;
+				}
 				this.app.vault
 					.cachedRead(file)
 					.then((text) => this.resize.refreshSource(file.path, text.split(/\r?\n/)))
@@ -123,28 +133,51 @@ export default class GridlockTablesPlugin extends Plugin {
 	 * there, so unsaved typing is not overwritten; otherwise the file is
 	 * rewritten atomically with Vault.process.
 	 */
-	private writeWidthComment(path: string, index: number, widths: PinnedWidths) {
+	private async writeWidthComment(path: string, index: number, widths: PinnedWidths): Promise<boolean> {
+		const editor = this.openEditor(path);
+		if (editor) {
+			const lines = editor.getValue().split('\n');
+			if (tableStartLines(lines)[index] === undefined) return this.reportMissingTable(path);
+			const edit = widthCommentEdit(lines, index, widths);
+			if (edit) {
+				editor.replaceRange(
+					edit.insert.map((line) => `${line}\n`).join(''),
+					{ line: edit.start, ch: 0 },
+					{ line: edit.start + edit.deleteCount, ch: 0 },
+				);
+			}
+			return true;
+		}
+		const file = this.app.vault.getFileByPath(path);
+		if (!file) return this.reportMissingTable(path);
+		let found = false;
+		try {
+			await this.app.vault.process(file, (text) => {
+				found = tableStartLines(text.split(/\r?\n/))[index] !== undefined;
+				return writeWidthComment(text, index, widths);
+			});
+		} catch (err) {
+			this.reportSaveError(err);
+			return false;
+		}
+		return found || this.reportMissingTable(path);
+	}
+
+	/** The editor a note is open in (Source mode or Live Preview), if any. */
+	private openEditor(path: string): Editor | undefined {
 		let editor: Editor | undefined;
 		this.app.workspace.iterateAllLeaves((leaf) => {
 			if (!editor && leaf.view instanceof MarkdownView && leaf.view.file?.path === path && leaf.view.getMode() === 'source') {
 				editor = leaf.view.editor;
 			}
 		});
-		if (editor) {
-			const edit = widthCommentEdit(editor.getValue().split('\n'), index, widths);
-			if (!edit) return;
-			editor.replaceRange(
-				edit.insert.map((line) => `${line}\n`).join(''),
-				{ line: edit.start, ch: 0 },
-				{ line: edit.start + edit.deleteCount, ch: 0 },
-			);
-			return;
-		}
-		const file = this.app.vault.getFileByPath(path);
-		if (!file) return;
-		this.app.vault
-			.process(file, (text) => writeWidthComment(text, index, widths))
-			.catch((err: unknown) => this.reportSaveError(err));
+		return editor;
+	}
+
+	private reportMissingTable(path: string): false {
+		console.error('Gridlock Tables: table not found in', path, '- column widths not saved');
+		new Notice('Could not save column widths: the table moved. Try resizing it again.');
+		return false;
 	}
 
 	private reportSaveError(err: unknown) {

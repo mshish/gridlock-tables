@@ -44,9 +44,9 @@ describe('RecordWidthStore', () => {
 
 describe('NoteWidthStore', () => {
 	const TABLE = ['| A | B |', '|---|---|', '| 1 | 2 |'];
-	const make = (inNote = true, raw: unknown = {}) => {
+	const make = (inNote = true, raw: unknown = {}, written = true) => {
 		const persist = vi.fn();
-		const write = vi.fn();
+		const write = vi.fn(() => Promise.resolve(written));
 		const record = new RecordWidthStore(raw, persist);
 		const store = new NoteWidthStore(record, write, () => inNote);
 		return { store, record, write, persist };
@@ -65,12 +65,32 @@ describe('NoteWidthStore', () => {
 		expect(store.get('a.md#0')).toBeUndefined();
 	});
 
-	it('writes pins to the note and drops an older data.json entry', () => {
+	it('writes pins to the note and drops an older data.json entry once written', async () => {
 		const { store, record, write } = make(true, { 'a.md#0': [4, null] });
 		store.set('a.md#0', [null, 12]);
 		expect(write).toHaveBeenCalledWith('a.md', 0, [null, 12]);
 		expect(store.get('a.md#0')).toEqual([null, 12]);
+		expect(record.get('a.md#0')).toEqual([4, null]);
+		await Promise.resolve();
 		expect(record.get('a.md#0')).toBeUndefined();
+	});
+
+	it('keeps the data.json entry and the old width when the note write fails', async () => {
+		const { store, record } = make(true, { 'a.md#0': [4, null] }, false);
+		store.set('a.md#0', [null, 12]);
+		await Promise.resolve();
+		expect(record.get('a.md#0')).toEqual([4, null]);
+		expect(store.get('a.md#0')).toEqual([4, null]);
+	});
+
+	it('never hides a width when the storage setting changes', () => {
+		let inNote = true;
+		const record = new RecordWidthStore({ 'b.md#0': [6, null] }, () => undefined);
+		const store = new NoteWidthStore(record, () => Promise.resolve(true), () => inNote);
+		store.observe('a.md', ['<!-- gridlock-cols: 9ch auto -->', '', ...TABLE]);
+		inNote = false;
+		expect(store.get('a.md#0')).toEqual([9, null]);
+		expect(store.get('b.md#0')).toEqual([6, null]);
 	});
 
 	it('removes the comment when every pin is cleared', () => {
@@ -86,13 +106,14 @@ describe('NoteWidthStore', () => {
 		expect(store.get('a.md#0')).toEqual([4, null]);
 	});
 
-	it('uses only data.json when notes are not written', () => {
+	it('saves to data.json, and prefers it, when notes are not written', () => {
 		const { store, record, write } = make(false);
 		store.observe('a.md', ['<!-- gridlock-cols: 9ch auto -->', '', ...TABLE]);
-		expect(store.get('a.md#0')).toBeUndefined();
+		expect(store.get('a.md#0')).toEqual([9, null]);
 		store.set('a.md#0', [7, null]);
 		expect(write).not.toHaveBeenCalled();
 		expect(record.get('a.md#0')).toEqual([7, null]);
+		expect(store.get('a.md#0')).toEqual([7, null]);
 	});
 
 	it('does not confuse a note with one whose path extends it', () => {
