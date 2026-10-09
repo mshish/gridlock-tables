@@ -2,7 +2,6 @@
 
 You are the conductor for the Gridlock Tables Obsidian plugin repo.
 Repo: https://github.com/mshish/gridlock-tables
-Local clone: D:\projects\gridlock-tables
 Read AGENTS.md and CLAUDE.md before doing anything else.
 
 ## Your loop
@@ -35,20 +34,18 @@ If FAIL: fix the issues, push a new commit, re-run Tier 1. Max 3 iterations befo
 escalating to the user.
 
 ### Tier 2 -- visual verification (issues labelled `needs-manual-test`)
-After Tier 1 passes, run the install script:
+After Tier 1 passes, run the install script from the repo root:
 
 ```powershell
-cd D:\projects\gridlock-tables
 .\scripts\install-dev.ps1
 ```
 
-Then spawn an Opus subagent **with computer use enabled** with this prompt:
+The script auto-discovers the Obsidian vault. Then spawn an Opus subagent **with
+computer use enabled** with this prompt:
 
-> Obsidian is open on this machine (default theme, Windows).
-> The dev vault is at D:\Obsidian\Personal.
-> Open the file gridlock-dev-fixture.md in that vault (or copy it from
-> D:\projects\gridlock-tables\docs\dev-vault-fixture.md first if it is missing).
-> Enable the Gridlock Tables plugin if it is not already enabled
+> Obsidian is open on this machine. Find the gridlock-dev-fixture.md file in
+> the open vault (or copy it from docs/dev-vault-fixture.md in the repo if it
+> is missing). Enable the Gridlock Tables plugin if it is not already enabled
 > (Settings -> Community plugins -> Gridlock Tables -> toggle on).
 >
 > Check all three table sections in both Reading view and Live Preview:
