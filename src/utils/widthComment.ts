@@ -58,6 +58,37 @@ function commentLine(lines: readonly string[], start: number): number {
 	return -1;
 }
 
+/** Inclusive range of 0-based line numbers. */
+export interface LineRange {
+	from: number;
+	to: number;
+}
+
+/**
+ * The lines of each table's gridlock-cols comment: the comment and the blank
+ * line between it and the table. Malformed comments are left out, and so is a
+ * comment directly above its table: Live Preview then shows the table as
+ * plain text, and the comment is the visible reason why.
+ */
+export function widthCommentRanges(lines: readonly string[]): LineRange[] {
+	const out: LineRange[] = [];
+	for (const start of tableStartLines(lines)) {
+		const at = commentLine(lines, start);
+		if (at >= 0 && at === start - 2 && parseWidthComment(lines[at] ?? '')) out.push({ from: at, to: start - 1 });
+	}
+	return out;
+}
+
+/** The lines of `ranges` that no selected range touches, in order. */
+export function untouchedLines(ranges: readonly LineRange[], selected: readonly LineRange[]): number[] {
+	const out: number[] = [];
+	for (const range of ranges) {
+		if (selected.some((s) => s.from <= range.to && s.to >= range.from)) continue;
+		for (let line = range.from; line <= range.to; line++) out.push(line);
+	}
+	return out;
+}
+
 /** Widths from the comment above each table, by table index. */
 export function widthsFromComments(lines: readonly string[]): Map<number, PinnedWidths> {
 	const out = new Map<number, PinnedWidths>();
