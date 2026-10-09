@@ -1,4 +1,4 @@
-import { MarkdownView, Plugin } from 'obsidian';
+import { MarkdownView, Notice, Plugin } from 'obsidian';
 import { ResizeController } from './resize/controller';
 import { livePreviewExtension } from './resize/livePreview';
 import { readingViewProcessor } from './resize/readingView';
@@ -91,7 +91,12 @@ export default class GridlockTablesPlugin extends Plugin {
 	async loadSettings() {
 		const { tableWidths, ...settings } = ((await this.loadData()) ?? {}) as PluginData;
 		this.settings = Object.assign({}, DEFAULT_SETTINGS, settings);
-		this.widths = new RecordWidthStore(tableWidths, () => void this.saveSettings());
+		this.widths = new RecordWidthStore(tableWidths, () => {
+			this.saveSettings().catch((err: unknown) => {
+				console.error('Gridlock Tables: could not save column widths', err);
+				new Notice('Could not save column widths. See the developer console for details.');
+			});
+		});
 	}
 
 	async saveSettings() {
