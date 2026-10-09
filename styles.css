@@ -18,6 +18,82 @@
  *                   > .cm-contentContainer > .cm-content > .cm-table-widget
  */
 
+/* @settings
+
+name: Gridlock Tables
+id: gridlock-tables
+settings:
+    -
+        id: gridlock-table-font
+        title: Table font
+        description: Font for table text, as a CSS font-family list. Leave empty to use the note's font.
+        type: variable-text
+        default: ''
+        quotes: false
+    -
+        id: gridlock-header-font
+        title: Header font
+        description: Font for header cells. Leave empty to use the table font.
+        type: variable-text
+        default: ''
+        quotes: false
+    -
+        id: gridlock-text-size
+        title: Text size
+        type: variable-number-slider
+        default: 16
+        min: 10
+        max: 24
+        step: 1
+        format: px
+    -
+        id: gridlock-header-size
+        title: Header text size
+        type: variable-number-slider
+        default: 16
+        min: 10
+        max: 24
+        step: 1
+        format: px
+    -
+        id: gridlock-header-weight
+        title: Header weight
+        type: variable-select
+        default: '600'
+        options:
+            - '400'
+            - '500'
+            - '600'
+            - '700'
+    -
+        id: gridlock-line-height
+        title: Line height
+        type: variable-number-slider
+        default: 1.3
+        min: 1
+        max: 2
+        step: 0.05
+    -
+        id: gridlock-cell-padding-y
+        title: Cell padding, top and bottom
+        type: variable-number-slider
+        default: 0.25
+        min: 0
+        max: 1
+        step: 0.05
+        format: em
+    -
+        id: gridlock-cell-padding-x
+        title: Cell padding, left and right
+        type: variable-number-slider
+        default: 0.5
+        min: 0
+        max: 1.5
+        step: 0.05
+        format: em
+
+*/
+
 /*
  * Clamped column widths, set on the table containers so an opted-out note's
  * tables inherit Obsidian's own values. The plugin sets --gridlock-col-min/max
@@ -27,6 +103,90 @@ body.gridlock-tables-enabled .markdown-preview-view:not(.gridlock-tables-off) > 
 body.gridlock-tables-enabled .markdown-source-view.mod-cm6:not(.gridlock-tables-off) > .cm-editor > .cm-scroller > .cm-sizer > .cm-contentContainer > .cm-content > .cm-table-widget {
 	--table-column-min-width: var(--gridlock-col-min, 6ch);
 	--table-column-max-width: var(--gridlock-col-max, 60ch);
+}
+
+/*
+ * Text style, from the Style Settings block above. Style Settings sets a
+ * --gridlock-* variable on body only once the user changes that option, and
+ * each option's rules sit in a style query on that variable, so until then
+ * they do not exist: Obsidian's rules, themes and snippets apply unchanged.
+ * (Plain fallbacks would not do: these selectors outrank .markdown-rendered
+ * td, so a snippet styling cells directly would lose even with nothing set.)
+ * A cleared text field is stored as "", which counts as not set.
+ *
+ * The table itself carries the body font and size: <col> widths are in ch,
+ * which resolves against the table's font, so pinned columns scale with the
+ * text. Both views put the table under .markdown-rendered, where Obsidian
+ * styles td and th; Live Preview pads .table-cell-wrapper instead of the cell.
+ */
+@container style(--gridlock-table-font) and (not style(--gridlock-table-font: "")) {
+	body.gridlock-tables-enabled .markdown-preview-view:not(.gridlock-tables-off) > .markdown-preview-sizer > .el-table > table,
+	body.gridlock-tables-enabled .markdown-source-view.mod-cm6:not(.gridlock-tables-off) > .cm-editor > .cm-scroller > .cm-sizer > .cm-contentContainer > .cm-content > .cm-table-widget > .table-wrapper > table {
+		font-family: var(--gridlock-table-font);
+	}
+}
+
+@container style(--gridlock-text-size) {
+	body.gridlock-tables-enabled .markdown-preview-view:not(.gridlock-tables-off) > .markdown-preview-sizer > .el-table > table,
+	body.gridlock-tables-enabled .markdown-source-view.mod-cm6:not(.gridlock-tables-off) > .cm-editor > .cm-scroller > .cm-sizer > .cm-contentContainer > .cm-content > .cm-table-widget > .table-wrapper > table,
+	body.gridlock-tables-enabled .markdown-preview-view:not(.gridlock-tables-off) > .markdown-preview-sizer > .el-table > table > tbody > tr > td,
+	body.gridlock-tables-enabled .markdown-source-view.mod-cm6:not(.gridlock-tables-off) > .cm-editor > .cm-scroller > .cm-sizer > .cm-contentContainer > .cm-content > .cm-table-widget > .table-wrapper > table > tbody > tr > td,
+	body.gridlock-tables-enabled .markdown-preview-view:not(.gridlock-tables-off) > .markdown-preview-sizer > .el-table > table > thead > tr > th,
+	body.gridlock-tables-enabled .markdown-source-view.mod-cm6:not(.gridlock-tables-off) > .cm-editor > .cm-scroller > .cm-sizer > .cm-contentContainer > .cm-content > .cm-table-widget > .table-wrapper > table > thead > tr > th {
+		font-size: var(--gridlock-text-size);
+	}
+}
+
+/* After Text size, so a header size wins over it. */
+@container style(--gridlock-header-size) {
+	body.gridlock-tables-enabled .markdown-preview-view:not(.gridlock-tables-off) > .markdown-preview-sizer > .el-table > table > thead > tr > th,
+	body.gridlock-tables-enabled .markdown-source-view.mod-cm6:not(.gridlock-tables-off) > .cm-editor > .cm-scroller > .cm-sizer > .cm-contentContainer > .cm-content > .cm-table-widget > .table-wrapper > table > thead > tr > th {
+		font-size: var(--gridlock-header-size);
+	}
+}
+
+@container style(--gridlock-header-font) and (not style(--gridlock-header-font: "")) {
+	body.gridlock-tables-enabled .markdown-preview-view:not(.gridlock-tables-off) > .markdown-preview-sizer > .el-table > table > thead > tr > th,
+	body.gridlock-tables-enabled .markdown-source-view.mod-cm6:not(.gridlock-tables-off) > .cm-editor > .cm-scroller > .cm-sizer > .cm-contentContainer > .cm-content > .cm-table-widget > .table-wrapper > table > thead > tr > th {
+		font-family: var(--gridlock-header-font);
+	}
+}
+
+@container style(--gridlock-header-weight) {
+	body.gridlock-tables-enabled .markdown-preview-view:not(.gridlock-tables-off) > .markdown-preview-sizer > .el-table > table > thead > tr > th,
+	body.gridlock-tables-enabled .markdown-source-view.mod-cm6:not(.gridlock-tables-off) > .cm-editor > .cm-scroller > .cm-sizer > .cm-contentContainer > .cm-content > .cm-table-widget > .table-wrapper > table > thead > tr > th {
+		font-weight: var(--gridlock-header-weight);
+	}
+}
+
+/* Obsidian reads --table-line-height for the table and for the editor in a
+ * Live Preview cell being edited; headers get their own line height. */
+@container style(--gridlock-line-height) {
+	body.gridlock-tables-enabled .markdown-preview-view:not(.gridlock-tables-off) > .markdown-preview-sizer > .el-table,
+	body.gridlock-tables-enabled .markdown-source-view.mod-cm6:not(.gridlock-tables-off) > .cm-editor > .cm-scroller > .cm-sizer > .cm-contentContainer > .cm-content > .cm-table-widget {
+		--table-line-height: var(--gridlock-line-height);
+	}
+
+	body.gridlock-tables-enabled .markdown-preview-view:not(.gridlock-tables-off) > .markdown-preview-sizer > .el-table > table > thead > tr > th,
+	body.gridlock-tables-enabled .markdown-source-view.mod-cm6:not(.gridlock-tables-off) > .cm-editor > .cm-scroller > .cm-sizer > .cm-contentContainer > .cm-content > .cm-table-widget > .table-wrapper > table > thead > tr > th {
+		line-height: var(--gridlock-line-height);
+	}
+}
+
+@container style(--gridlock-cell-padding-y) {
+	body.gridlock-tables-enabled .markdown-preview-view:not(.gridlock-tables-off) > .markdown-preview-sizer > .el-table > table > * > tr > :is(th, td),
+	body.gridlock-tables-enabled .markdown-source-view.mod-cm6:not(.gridlock-tables-off) > .cm-editor > .cm-scroller > .cm-sizer > .cm-contentContainer > .cm-content > .cm-table-widget > .table-wrapper > table > * > tr > :is(th, td) > .table-cell-wrapper {
+		padding-top: var(--gridlock-cell-padding-y);
+		padding-bottom: var(--gridlock-cell-padding-y);
+	}
+}
+
+@container style(--gridlock-cell-padding-x) {
+	body.gridlock-tables-enabled .markdown-preview-view:not(.gridlock-tables-off) > .markdown-preview-sizer > .el-table > table > * > tr > :is(th, td),
+	body.gridlock-tables-enabled .markdown-source-view.mod-cm6:not(.gridlock-tables-off) > .cm-editor > .cm-scroller > .cm-sizer > .cm-contentContainer > .cm-content > .cm-table-widget > .table-wrapper > table > * > tr > :is(th, td) > .table-cell-wrapper {
+		padding-left: var(--gridlock-cell-padding-x);
+		padding-right: var(--gridlock-cell-padding-x);
+	}
 }
 
 /*
