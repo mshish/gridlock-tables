@@ -14,6 +14,7 @@ import {
 	pinColumn,
 	pxToCh,
 } from '../utils/columnWidths';
+import { gestureEnd, startsGesture } from '../utils/gesture';
 import { WidthStore } from '../utils/widthStore';
 import {
 	HANDLE_CLASS,
@@ -84,7 +85,7 @@ export class ResizeController {
 		const cell = handle?.parentElement;
 		const table = handle?.closest('table');
 		if (!handle || !cell || !table || !isActiveTable(table)) return;
-		if (evt.button !== 0) return;
+		if (!startsGesture(evt)) return;
 		evt.preventDefault();
 		evt.stopPropagation();
 		this.startGesture(evt, handle, cell, table);
@@ -120,33 +121,57 @@ export class ResizeController {
 			this.dragging.set(table, widths);
 			applyWidths(table, widths);
 		};
-		const onEnd = (evt: PointerEvent) => {
+		let ended = false;
+		const finish = (evt: PointerEvent, ending: 'up' | 'cancel') => {
+			// Releasing capture after pointerup fires lostpointercapture too.
+			if (ended) return;
+			ended = true;
 			handle.removeEventListener('pointermove', onMove);
-			handle.removeEventListener('pointerup', onEnd);
-			handle.removeEventListener('pointercancel', onEnd);
+			handle.removeEventListener('pointerup', onUp);
+			handle.removeEventListener('pointercancel', onCancel);
+			handle.removeEventListener('lostpointercapture', onCancel);
+			doc.removeEventListener('lostpointercapture', onLostFromDocument, true);
 			if (handle.hasPointerCapture(evt.pointerId)) handle.releasePointerCapture(evt.pointerId);
 			handle.removeClass('is-active');
 			container?.removeClass(RESIZING_CLASS);
 			this.dragging.delete(table);
-			if (moved) {
-				// Store what rendered: a cell's min-width can hold a column wider
-				// than the pointer asked for.
-				const rendered = pxToCh(cell.getBoundingClientRect().width, chPx);
-				this.save(key, pinColumn(base, col, rendered, count));
-				this.lastTap = undefined;
-				return;
-			}
-			const tap = { time: evt.timeStamp, x: evt.clientX, y: evt.clientY, handle };
-			if (this.lastTap?.handle === handle && isDoubleTap(this.lastTap, tap)) {
-				this.lastTap = undefined;
-				this.autoFit(table, cell, col, key);
-			} else {
-				this.lastTap = tap;
+			switch (gestureEnd(ending, moved)) {
+				case 'revert':
+					applyWidths(table, this.host.store.get(key));
+					this.lastTap = undefined;
+					return;
+				case 'commit': {
+					// Store what rendered: a cell's min-width can hold a column wider
+					// than the pointer asked for.
+					const rendered = pxToCh(cell.getBoundingClientRect().width, chPx);
+					this.save(key, pinColumn(base, col, rendered, count));
+					this.lastTap = undefined;
+					return;
+				}
+				case 'tap': {
+					const tap = { time: evt.timeStamp, x: evt.clientX, y: evt.clientY, handle };
+					if (this.lastTap?.handle === handle && isDoubleTap(this.lastTap, tap)) {
+						this.lastTap = undefined;
+						this.autoFit(table, cell, col, key);
+					} else {
+						this.lastTap = tap;
+					}
+				}
 			}
 		};
+		const onUp = (evt: PointerEvent) => finish(evt, 'up');
+		const onCancel = (evt: PointerEvent) => finish(evt, 'cancel');
+		// A handle removed mid-drag loses capture with the event fired at its
+		// document, not at the detached handle.
+		const doc = handle.doc;
+		const onLostFromDocument = (evt: PointerEvent) => {
+			if (evt.pointerId === down.pointerId) finish(evt, 'cancel');
+		};
 		handle.addEventListener('pointermove', onMove);
-		handle.addEventListener('pointerup', onEnd);
-		handle.addEventListener('pointercancel', onEnd);
+		handle.addEventListener('pointerup', onUp);
+		handle.addEventListener('pointercancel', onCancel);
+		handle.addEventListener('lostpointercapture', onCancel);
+		doc.addEventListener('lostpointercapture', onLostFromDocument, true);
 	}
 
 	/** Pin a column to its content width, per the autoSize distribution. */
