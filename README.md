@@ -25,6 +25,29 @@ behind it are in `docs/research/feasibility.md`.
   whole table. They set Obsidian's `--table-column-min-width` and
   `--table-column-max-width` while the plugin is enabled, and apply without a
   reload.
+- **Save column widths** (default: in the note): where widths you set by
+  dragging or double-clicking a column handle are kept. See below.
+
+## Where resized widths are saved
+
+By default, resizing a column writes the widths into the note, as an HTML
+comment and a blank line above the table:
+
+```markdown
+<!-- gridlock-cols: 12ch auto 40ch -->
+
+| Col A | Col B | Col C |
+```
+
+There is one value per column: a width in `ch`, or `auto` for a column that
+sizes to its content. Other Markdown renderers ignore the comment, so the widths
+travel with the note through renames, moves and sync. Delete the comment to go
+back to content-driven sizing. The blank line matters: in Obsidian, a comment
+directly above a table stops Live Preview rendering it as a table.
+
+Choose **In plugin data** under **Save column widths** to leave your Markdown
+untouched. Widths are then kept in the plugin's `data.json`, by note path and
+table position.
 
 ## Turning it off for one note
 

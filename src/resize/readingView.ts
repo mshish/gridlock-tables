@@ -26,8 +26,10 @@ export function readingViewProcessor(controller: ResizeController, enabled: () =
 		}
 		const info = ctx.getSectionInfo(el);
 		if (!info) return;
-		const index = tableIndexAt(tableStartLines(info.text.split('\n')), info.lineStart, info.lineEnd);
+		const lines = info.text.split('\n');
+		const index = tableIndexAt(tableStartLines(lines), info.lineStart, info.lineEnd);
 		if (index < 0) return;
+		controller.observeSource(ctx.sourcePath, lines);
 		controller.decorate(table, tableKey(ctx.sourcePath, index));
 	};
 }

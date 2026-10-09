@@ -1,4 +1,4 @@
-import { MarkdownView, Notice, Plugin } from 'obsidian';
+import { Editor, MarkdownView, Notice, Plugin, TFile } from 'obsidian';
 import { ResizeController } from './resize/controller';
 import { livePreviewExtension } from './resize/livePreview';
 import { readingViewProcessor } from './resize/readingView';
@@ -13,7 +13,9 @@ import {
 	COLUMN_MIN_VAR,
 	columnLimitVars,
 } from './utils/columnLimits';
-import { RecordWidthStore } from './utils/widthStore';
+import { PinnedWidths } from './utils/columnWidths';
+import { widthCommentEdit, writeWidthComment } from './utils/widthComment';
+import { NoteWidthStore, RecordWidthStore } from './utils/widthStore';
 
 export { ENABLED_CLASS };
 
@@ -22,7 +24,9 @@ type PluginData = Partial<GridlockTablesSettings> & { tableWidths?: unknown };
 
 export default class GridlockTablesPlugin extends Plugin {
 	settings!: GridlockTablesSettings;
-	private widths!: RecordWidthStore;
+	/** Pins in data.json: the 'plugin' storage setting, and older pins. */
+	private records!: RecordWidthStore;
+	private widths!: NoteWidthStore;
 	private resize!: ResizeController;
 
 	async onload() {
@@ -56,6 +60,15 @@ export default class GridlockTablesPlugin extends Plugin {
 		listen(document);
 		this.registerEvent(this.app.workspace.on('window-open', (win) => listen(win.doc)));
 
+		this.registerEvent(
+			this.app.vault.on('modify', (file) => {
+				if (!(file instanceof TFile) || file.extension !== 'md') return;
+				this.app.vault
+					.cachedRead(file)
+					.then((text) => this.resize.refreshSource(file.path, text.split(/\r?\n/)))
+					.catch((err: unknown) => console.error('Gridlock Tables: could not re-read', file.path, err));
+			}),
+		);
 		this.registerEvent(this.app.vault.on('rename', (file, oldPath) => this.widths.renameFile(oldPath, file.path)));
 		this.registerEvent(this.app.vault.on('delete', (file) => this.widths.renameFile(file.path, null)));
 		this.register(() => this.resize.stripEverywhere());
@@ -91,15 +104,51 @@ export default class GridlockTablesPlugin extends Plugin {
 	async loadSettings() {
 		const { tableWidths, ...settings } = ((await this.loadData()) ?? {}) as PluginData;
 		this.settings = Object.assign({}, DEFAULT_SETTINGS, settings);
-		this.widths = new RecordWidthStore(tableWidths, () => {
-			this.saveSettings().catch((err: unknown) => {
-				console.error('Gridlock Tables: could not save column widths', err);
-				new Notice('Could not save column widths. See the developer console for details.');
-			});
+		this.records = new RecordWidthStore(tableWidths, () => {
+			this.saveSettings().catch((err: unknown) => this.reportSaveError(err));
 		});
+		this.widths = new NoteWidthStore(
+			this.records,
+			(path, index, widths) => this.writeWidthComment(path, index, widths),
+			() => this.settings.widthStorage === 'note',
+		);
 	}
 
 	async saveSettings() {
-		await this.saveData({ ...this.settings, tableWidths: this.widths.toJSON() });
+		await this.saveData({ ...this.settings, tableWidths: this.records.toJSON() });
+	}
+
+	/**
+	 * Write a table's gridlock-cols comment. A note open in an editor is edited
+	 * there, so unsaved typing is not overwritten; otherwise the file is
+	 * rewritten atomically with Vault.process.
+	 */
+	private writeWidthComment(path: string, index: number, widths: PinnedWidths) {
+		let editor: Editor | undefined;
+		this.app.workspace.iterateAllLeaves((leaf) => {
+			if (!editor && leaf.view instanceof MarkdownView && leaf.view.file?.path === path && leaf.view.getMode() === 'source') {
+				editor = leaf.view.editor;
+			}
+		});
+		if (editor) {
+			const edit = widthCommentEdit(editor.getValue().split('\n'), index, widths);
+			if (!edit) return;
+			editor.replaceRange(
+				edit.insert.map((line) => `${line}\n`).join(''),
+				{ line: edit.start, ch: 0 },
+				{ line: edit.start + edit.deleteCount, ch: 0 },
+			);
+			return;
+		}
+		const file = this.app.vault.getFileByPath(path);
+		if (!file) return;
+		this.app.vault
+			.process(file, (text) => writeWidthComment(text, index, widths))
+			.catch((err: unknown) => this.reportSaveError(err));
+	}
+
+	private reportSaveError(err: unknown) {
+		console.error('Gridlock Tables: could not save column widths', err);
+		new Notice('Could not save column widths. See the developer console for details.');
 	}
 }

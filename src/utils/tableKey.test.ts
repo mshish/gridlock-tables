@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
+	parseTableKey,
 	renameTableKeys,
 	tableIndexAt,
 	tableKey,
@@ -72,5 +73,17 @@ describe('renameTableKeys', () => {
 		expect(renameTableKeys({ 'a.md#0': [1], 'c.md#0': [2] }, 'a.md', null)).toEqual({
 			'c.md#0': [2],
 		});
+	});
+});
+
+describe('parseTableKey', () => {
+	it('splits on the last #', () => {
+		expect(parseTableKey('notes/a#b.md#3')).toEqual({ path: 'notes/a#b.md', index: 3 });
+	});
+
+	it('rejects keys without a table index', () => {
+		expect(parseTableKey('a.md')).toBeNull();
+		expect(parseTableKey('a.md#')).toBeNull();
+		expect(parseTableKey('a.md#x')).toBeNull();
 	});
 });

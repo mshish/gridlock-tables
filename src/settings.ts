@@ -13,12 +13,20 @@ export interface GridlockTablesSettings {
 	columnMinCh: number;
 	/** Widest a content-sized column may get, in ch. */
 	columnMaxCh: number;
+	/**
+	 * Where pinned widths are saved: 'note' writes a gridlock-cols comment above
+	 * the table, 'plugin' keeps them in this plugin's data only.
+	 */
+	widthStorage: WidthStorage;
 }
+
+export type WidthStorage = 'note' | 'plugin';
 
 export const DEFAULT_SETTINGS: GridlockTablesSettings = {
 	enabled: true,
 	columnMinCh: DEFAULT_COLUMN_MIN_CH,
 	columnMaxCh: DEFAULT_COLUMN_MAX_CH,
+	widthStorage: 'note',
 };
 
 type SettingKey = keyof GridlockTablesSettings;
@@ -73,6 +81,16 @@ export class GridlockTablesSettingTab extends PluginSettingTab {
 					displayFormat: (value) => `${value}ch`,
 				},
 			},
+			{
+				name: 'Save column widths',
+				desc: 'In the note keeps resized widths in an HTML comment above the table, so they travel with the note. In plugin data leaves your Markdown untouched.',
+				control: {
+					type: 'dropdown',
+					key: 'widthStorage',
+					defaultValue: DEFAULT_SETTINGS.widthStorage,
+					options: { note: 'In the note', plugin: 'In plugin data' },
+				},
+			},
 		];
 	}
 
@@ -85,6 +103,8 @@ export class GridlockTablesSettingTab extends PluginSettingTab {
 			this.plugin.settings.enabled = Boolean(value);
 		} else if (key === 'columnMinCh' || key === 'columnMaxCh') {
 			this.plugin.settings[key] = Number(value);
+		} else if (key === 'widthStorage') {
+			this.plugin.settings.widthStorage = value === 'plugin' ? 'plugin' : 'note';
 		}
 		await this.plugin.saveSettings();
 		this.plugin.applyEnabledState();
