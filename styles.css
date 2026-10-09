@@ -1,16 +1,20 @@
 /*
  * Gridlock Tables.
  * Every rule is scoped under body.gridlock-tables-enabled so the settings
- * toggle restores native table rendering without a reload.
+ * toggle restores native table rendering without a reload, and under a note
+ * view (.markdown-preview-view / .markdown-source-view) that does not carry
+ * .gridlock-tables-off, so a note can opt out with
+ * `cssclasses: [gridlock-tables-off]` in its frontmatter. Obsidian puts a
+ * note's cssclasses on both of those view elements.
  */
 
 /*
- * Clamped column widths. Obsidian defines both variables on `body`; this
- * selector is more specific, so it wins while the plugin is enabled. The
- * plugin sets --gridlock-col-min/max from settings; the fallbacks match the
- * defaults in src/utils/columnLimits.ts.
+ * Clamped column widths. Obsidian defines both variables on `body`; setting
+ * them on the note view instead leaves opted-out notes inheriting Obsidian's
+ * own values. The plugin sets --gridlock-col-min/max from settings; the
+ * fallbacks match the defaults in src/utils/columnLimits.ts.
  */
-body.gridlock-tables-enabled {
+body.gridlock-tables-enabled :is(.markdown-preview-view, .markdown-source-view):not(.gridlock-tables-off) {
 	--table-column-min-width: var(--gridlock-col-min, 6ch);
 	--table-column-max-width: var(--gridlock-col-max, 60ch);
 }
@@ -19,7 +23,7 @@ body.gridlock-tables-enabled {
  * Content-driven layout. Kept at the lowest specificity :where() allows so the
  * Phase 2 pinned state (table-layout: fixed) overrides it without !important.
  */
-body.gridlock-tables-enabled :where(.markdown-rendered, .cm-table-widget) :where(table) {
+body.gridlock-tables-enabled :where(.markdown-preview-view, .markdown-source-view):where(:not(.gridlock-tables-off)) :where(table) {
 	table-layout: auto;
 }
 
@@ -28,7 +32,7 @@ body.gridlock-tables-enabled :where(.markdown-rendered, .cm-table-widget) :where
  * view cells but only --table-column-min-width to the Live Preview table
  * widget's cells.
  */
-body.gridlock-tables-enabled .markdown-source-view.mod-cm6 .cm-table-widget :is(th, td) {
+body.gridlock-tables-enabled .markdown-source-view.mod-cm6:not(.gridlock-tables-off) .cm-table-widget :is(th, td) {
 	max-width: var(--table-column-max-width);
 }
 
@@ -49,19 +53,19 @@ body.gridlock-tables-enabled .markdown-source-view.mod-cm6 .cm-table-widget :is(
  * Only the outer editor scroller is a container: the LP widget's cells are
  * CodeMirror editors with scrollers of their own.
  */
-body.gridlock-tables-enabled .markdown-preview-view,
-body.gridlock-tables-enabled .markdown-source-view.mod-cm6 > .cm-editor > .cm-scroller {
+body.gridlock-tables-enabled .markdown-preview-view:not(.gridlock-tables-off),
+body.gridlock-tables-enabled .markdown-source-view.mod-cm6:not(.gridlock-tables-off) > .cm-editor > .cm-scroller {
 	container-type: inline-size;
 }
 
-body.gridlock-tables-enabled .markdown-preview-view.is-readable-line-width .el-table {
+body.gridlock-tables-enabled .markdown-preview-view.is-readable-line-width:not(.gridlock-tables-off) .el-table {
 	width: max-content;
 	max-width: calc((100cqw - min(var(--file-line-width), 100cqw)) / 2 + 100%);
 }
 
 /* The LP widget sits var(--size-4-4) left of the text column (Obsidian's
  * negative margin for its drag handles), so it gets that much more room. */
-body.gridlock-tables-enabled .markdown-source-view.mod-cm6.is-readable-line-width .cm-content > .cm-table-widget {
+body.gridlock-tables-enabled .markdown-source-view.mod-cm6.is-readable-line-width:not(.gridlock-tables-off) .cm-content > .cm-table-widget {
 	width: max-content;
 	max-width: calc((100cqw - min(var(--file-line-width), 100cqw)) / 2 + 100% + var(--size-4-4));
 }

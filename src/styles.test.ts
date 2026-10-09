@@ -4,6 +4,7 @@ import { describe, it, expect } from 'vitest';
 const css = readFileSync(new URL('../styles.css', import.meta.url), 'utf8');
 
 const ENABLED_SCOPE = 'body.gridlock-tables-enabled';
+const NOTE_OPT_OUT = ':not(.gridlock-tables-off)';
 
 /** Split a selector list on top-level commas, not those inside :is()/:where(). */
 function splitSelectorList(list: string): string[] {
@@ -38,6 +39,10 @@ describe('styles.css', () => {
 		const all = selectors(css);
 		expect(all.length).toBeGreaterThan(0);
 		expect(all.filter((s) => !s.startsWith(ENABLED_SCOPE))).toEqual([]);
+	});
+
+	it('lets a note opt out with cssclasses: [gridlock-tables-off]', () => {
+		expect(selectors(css).filter((s) => !s.includes(NOTE_OPT_OUT))).toEqual([]);
 	});
 
 	it('lets wide tables break out past the readable line', () => {
