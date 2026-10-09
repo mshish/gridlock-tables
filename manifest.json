@@ -3,7 +3,7 @@
 	"name": "Gridlock Tables",
 	"version": "0.1.0-beta.2",
 	"minAppVersion": "1.14.4",
-	"description": "Content-sized table columns, overflow-only horizontal scroll, and pinned manual widths. OneNote-style tables in Reading view and Live Preview.",
+	"description": "Size table columns to their content, let wide tables use the free space in the pane, and drag column edges to set widths that are saved with the note.",
 	"author": "Michael Sciscenti",
 	"authorUrl": "https://github.com/mshish",
 	"isDesktopOnly": false
