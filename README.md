@@ -1,18 +1,18 @@
 # Gridlock Tables
 
 Gridlock Tables makes Markdown tables easier to read and arrange. Columns size
-to what's in them, a wide table uses the space your pane actually has, and when
+to what's in them, a wide table uses the free space in your pane, and when
 you drag a column to a width you like, it stays that way.
 
 It works in Reading view and Live Preview.
 
 **Default table**
 
-![A table using the default layout: every column wraps to fit within the readable line width](docs/images/default-table.png)
+![A table using the default layout: it stays within the readable line width and most columns wrap](docs/images/default-table.png)
 
 **With Gridlock Tables**
 
-![The same table with Gridlock Tables: short columns stay on one line and the notes column uses the free space in the pane](docs/images/gridlock-table.png)
+![The same table with Gridlock Tables: it uses the free space in the pane, so most cells fit on fewer lines](docs/images/gridlock-table.png)
 
 ## Why I made this
 
@@ -25,9 +25,9 @@ ordinary Markdown and only changes how the table is laid out.
 | | Default tables | With Gridlock |
 |---|---|---|
 | Column widths | Set automatically by the layout | Sized to their content, within a minimum and maximum you choose |
-| Wide tables | Stay within the readable line width and scroll sideways inside it | Grow into the free space in the pane, and scroll sideways only when they run out of room |
+| Wide tables | Stay within the readable line width and scroll sideways inside it | Grow into the free space beside the readable line, and scroll sideways only when they run out of room |
 | Resizing a column | Not available | Drag a column edge, or double-click it to fit the content |
-| Remembering widths | Not available | Saved with the note, so they survive renames, moves and sync |
+| Remembering widths | Not available | Saved with the note by default, so they survive renames, moves and sync |
 | Look and feel | Follows your theme | Follows your theme, with optional font, size and spacing controls through Style Settings |
 
 ## Using it
@@ -35,13 +35,13 @@ ordinary Markdown and only changes how the table is laid out.
 Install the plugin and your tables pick up the new layout straight away. There
 is nothing to set up unless you want to.
 
-- **Resize a column**: hover over a column edge until the cursor changes, then
-  drag. With a mouse this works from any row. On a touch screen, drag the
-  handle in the header row.
+- **Resize a column**: with a mouse, hover over any column edge until the
+  cursor changes, then drag. On a touch screen, drag the handle at the right
+  edge of the header cell.
 - **Fit a column to its content**: double-click (or double-tap) the column
   edge.
 - **Go back to automatic widths**: delete the width comment above the table
-  (see below).
+  (see below). Widths saved in plugin data can't be reset yet.
 
 ### Where resized widths are saved
 
