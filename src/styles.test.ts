@@ -41,7 +41,9 @@ describe('styles.css', () => {
 	});
 
 	it('lets wide tables break out past the readable line', () => {
-		expect(css).toContain('max-width: calc((100cqw + 100%) / 2)');
+		expect(css).toContain(
+			'max-width: calc((100cqw - min(var(--file-line-width), 100cqw)) / 2 + 100%)',
+		);
 		expect(css).toContain('container-type: inline-size');
 	});
 });
