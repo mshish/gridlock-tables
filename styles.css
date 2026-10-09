@@ -1,20 +1,30 @@
 /*
  * Gridlock Tables.
  * Every rule is scoped under body.gridlock-tables-enabled so the settings
- * toggle restores native table rendering without a reload, and under a note
- * view (.markdown-preview-view / .markdown-source-view) that does not carry
- * .gridlock-tables-off, so a note can opt out with
- * `cssclasses: [gridlock-tables-off]` in its frontmatter. Obsidian puts a
- * note's cssclasses on both of those view elements.
+ * toggle restores native table rendering without a reload.
+ *
+ * Every rule also reaches a table only through the note view that renders it,
+ * and only when that view lacks .gridlock-tables-off, so a note can opt out
+ * with `cssclasses: [gridlock-tables-off]` in its frontmatter. Obsidian puts a
+ * note's cssclasses on its .markdown-preview-view / .markdown-source-view,
+ * including the inner view of an embedded note. The view-to-table path is
+ * spelled out with child combinators: with a plain descendant combinator an
+ * opted-out note embedded in a normal one would still match through the outer
+ * view.
+ *
+ * Table containers, Obsidian 1.14.4:
+ *   Reading view  .markdown-preview-view > .markdown-preview-sizer > .el-table
+ *   Live Preview  .markdown-source-view > .cm-editor > .cm-scroller > .cm-sizer
+ *                   > .cm-contentContainer > .cm-content > .cm-table-widget
  */
 
 /*
- * Clamped column widths. Obsidian defines both variables on `body`; setting
- * them on the note view instead leaves opted-out notes inheriting Obsidian's
- * own values. The plugin sets --gridlock-col-min/max from settings; the
- * fallbacks match the defaults in src/utils/columnLimits.ts.
+ * Clamped column widths, set on the table containers so an opted-out note's
+ * tables inherit Obsidian's own values. The plugin sets --gridlock-col-min/max
+ * from settings; the fallbacks match the defaults in src/utils/columnLimits.ts.
  */
-body.gridlock-tables-enabled :is(.markdown-preview-view, .markdown-source-view):not(.gridlock-tables-off) {
+body.gridlock-tables-enabled .markdown-preview-view:not(.gridlock-tables-off) > .markdown-preview-sizer > .el-table,
+body.gridlock-tables-enabled .markdown-source-view.mod-cm6:not(.gridlock-tables-off) > .cm-editor > .cm-scroller > .cm-sizer > .cm-contentContainer > .cm-content > .cm-table-widget {
 	--table-column-min-width: var(--gridlock-col-min, 6ch);
 	--table-column-max-width: var(--gridlock-col-max, 60ch);
 }
@@ -23,7 +33,8 @@ body.gridlock-tables-enabled :is(.markdown-preview-view, .markdown-source-view):
  * Content-driven layout. Kept at the lowest specificity :where() allows so the
  * Phase 2 pinned state (table-layout: fixed) overrides it without !important.
  */
-body.gridlock-tables-enabled :where(.markdown-preview-view, .markdown-source-view):where(:not(.gridlock-tables-off)) :where(table) {
+body.gridlock-tables-enabled :where(.markdown-preview-view:not(.gridlock-tables-off) > .markdown-preview-sizer > .el-table) > :where(table),
+body.gridlock-tables-enabled :where(.markdown-source-view.mod-cm6:not(.gridlock-tables-off) > .cm-editor > .cm-scroller > .cm-sizer > .cm-contentContainer > .cm-content > .cm-table-widget) > :where(.table-wrapper) > :where(table) {
 	table-layout: auto;
 }
 
@@ -32,16 +43,15 @@ body.gridlock-tables-enabled :where(.markdown-preview-view, .markdown-source-vie
  * view cells but only --table-column-min-width to the Live Preview table
  * widget's cells.
  */
-body.gridlock-tables-enabled .markdown-source-view.mod-cm6:not(.gridlock-tables-off) .cm-table-widget :is(th, td) {
+body.gridlock-tables-enabled .markdown-source-view.mod-cm6:not(.gridlock-tables-off) > .cm-editor > .cm-scroller > .cm-sizer > .cm-contentContainer > .cm-content > .cm-table-widget :is(th, td) {
 	max-width: var(--table-column-max-width);
 }
 
 /*
  * Overflow-only breakout. Obsidian already wraps every table in its own
- * horizontal scroll container (.el-table in Reading view, .cm-table-widget in
- * Live Preview) but sizes it to the readable line. Here the container shrinks
- * to the table and may grow rightward up to the pane's inner edge; past that,
- * the table scrolls inside its own container.
+ * horizontal scroll container but sizes it to the readable line. Here the
+ * container shrinks to the table and may grow rightward up to the pane's inner
+ * edge; past that, the table scrolls inside its own container.
  *
  * The pane's scroll element is the query container, so 100cqw is the width
  * the readable column (min(--file-line-width, 100cqw), Obsidian's sizer) is
@@ -58,14 +68,14 @@ body.gridlock-tables-enabled .markdown-source-view.mod-cm6:not(.gridlock-tables-
 	container-type: inline-size;
 }
 
-body.gridlock-tables-enabled .markdown-preview-view.is-readable-line-width:not(.gridlock-tables-off) .el-table {
+body.gridlock-tables-enabled .markdown-preview-view.is-readable-line-width:not(.gridlock-tables-off) > .markdown-preview-sizer > .el-table {
 	width: max-content;
 	max-width: calc((100cqw - min(var(--file-line-width), 100cqw)) / 2 + 100%);
 }
 
 /* The LP widget sits var(--size-4-4) left of the text column (Obsidian's
  * negative margin for its drag handles), so it gets that much more room. */
-body.gridlock-tables-enabled .markdown-source-view.mod-cm6.is-readable-line-width:not(.gridlock-tables-off) .cm-content > .cm-table-widget {
+body.gridlock-tables-enabled .markdown-source-view.mod-cm6.is-readable-line-width:not(.gridlock-tables-off) > .cm-editor > .cm-scroller > .cm-sizer > .cm-contentContainer > .cm-content > .cm-table-widget {
 	width: max-content;
 	max-width: calc((100cqw - min(var(--file-line-width), 100cqw)) / 2 + 100% + var(--size-4-4));
 }

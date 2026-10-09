@@ -45,6 +45,17 @@ describe('styles.css', () => {
 		expect(selectors(css).filter((s) => !s.includes(NOTE_OPT_OUT))).toEqual([]);
 	});
 
+	it('reaches tables only through their own note view', () => {
+		// A descendant combinator between the view and the table container would
+		// let an opted-out embedded note match through the host note's view.
+		const RV_PATH = /\.markdown-preview-view[^ >]*:not\(\.gridlock-tables-off\) > \.markdown-preview-sizer > \.el-table/;
+		const LP_PATH =
+			/\.markdown-source-view[^ >]*:not\(\.gridlock-tables-off\) > \.cm-editor > \.cm-scroller > \.cm-sizer > \.cm-contentContainer > \.cm-content > \.cm-table-widget/;
+		const tableRules = selectors(css).filter((s) => /el-table|cm-table-widget|\btable\b/.test(s));
+		expect(tableRules.length).toBeGreaterThan(0);
+		expect(tableRules.filter((s) => !RV_PATH.test(s) && !LP_PATH.test(s))).toEqual([]);
+	});
+
 	it('lets wide tables break out past the readable line', () => {
 		expect(css).toContain(
 			'max-width: calc((100cqw - min(var(--file-line-width), 100cqw)) / 2 + 100%)',
