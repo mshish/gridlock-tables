@@ -6,13 +6,7 @@ you drag a column to a width you like, it stays that way.
 
 It works in Reading view and Live Preview.
 
-**Default table**
-
-![A table using the default layout: it stays within the readable line width and most columns wrap](docs/images/default-table.png)
-
-**With Gridlock Tables**
-
-![The same table with Gridlock Tables: it uses the free space in the pane, so most cells fit on fewer lines](docs/images/gridlock-table.png)
+![A table shown first with the default layout, then with Gridlock Tables using the free space in the pane, then three columns being resized by dragging their edges](docs/images/resize-demo.gif)
 
 ## Why I made this
 
