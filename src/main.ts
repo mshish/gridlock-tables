@@ -41,6 +41,26 @@ export default class GridlockTablesPlugin extends Plugin {
 		});
 		this.applyEnabledState();
 		this.loadResize();
+		// Notes already open in Reading view were rendered before the post-processor
+		// was registered (a plugin update or re-enable): render them again.
+		this.app.workspace.onLayoutReady(() => {
+			if (this.settings.enabled) this.rerenderReadingViews();
+		});
+	}
+
+	/**
+	 * Render every open Reading view from scratch so the post-processor runs on
+	 * its tables. rerender(true) is not enough: it reuses sections it has already
+	 * rendered, so their tables keep the state from before (no handles or pins).
+	 */
+	private rerenderReadingViews() {
+		this.app.workspace.iterateAllLeaves((leaf) => {
+			if (!(leaf.view instanceof MarkdownView)) return;
+			const preview = leaf.view.previewMode;
+			const scroll = preview.getScroll();
+			preview.set(leaf.view.getViewData(), true);
+			preview.applyScroll(scroll);
+		});
 	}
 
 	private loadResize() {
@@ -105,9 +125,7 @@ export default class GridlockTablesPlugin extends Plugin {
 		}
 		if (!this.resize) return;
 		if (this.settings.enabled) {
-			this.app.workspace.iterateAllLeaves((leaf) => {
-				if (leaf.view instanceof MarkdownView) leaf.view.previewMode.rerender(true);
-			});
+			this.rerenderReadingViews();
 			this.resize.refreshEditors();
 		} else {
 			this.resize.stripEverywhere();
