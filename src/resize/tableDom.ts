@@ -4,7 +4,7 @@
  * can restore the native table exactly.
  */
 import { PinnedWidths, colgroupWidths, hasPins } from '../utils/columnWidths';
-import { measureTextLines } from '../utils/textMetrics';
+import { canMeasureAsText, measureTextLines } from '../utils/textMetrics';
 import { ENABLED_CLASS } from '../scope';
 
 export const HANDLE_CLASS = 'gridlock-col-resize';
@@ -160,7 +160,18 @@ function plainTextLines(cell: HTMLTableCellElement): string[] | null {
 			return null;
 		}
 	}
-	return lines;
+	return lines.every(canMeasureAsText) ? lines : null;
+}
+
+/** Spacing and casing canvas would not reproduce from the font shorthand. */
+function hasTextEffects(s: CSSStyleDeclaration): boolean {
+	return (
+		s.letterSpacing !== 'normal' ||
+		s.wordSpacing !== '0px' ||
+		s.textTransform !== 'none' ||
+		s.fontVariant !== 'normal' ||
+		s.fontFeatureSettings !== 'normal'
+	);
 }
 
 /**
@@ -174,7 +185,7 @@ export function measureColumnText(table: HTMLTableElement, col: number): { minPx
 	const ctx = canvas.getContext('2d');
 	if (!ctx) return null;
 	// Header and body cells differ in font and padding; rows of one kind do not.
-	const kinds = new Map<string, { font: string; chromePx: number }>();
+	const kinds = new Map<string, { font: string; chromePx: number } | null>();
 	let minPx = 0;
 	let maxPx = 0;
 	for (const row of Array.from(table.rows)) {
@@ -183,14 +194,17 @@ export function measureColumnText(table: HTMLTableElement, col: number): { minPx
 		const lines = plainTextLines(cell);
 		if (!lines) return null;
 		let kind = kinds.get(cell.tagName);
-		if (!kind) {
+		if (kind === undefined) {
 			const content = cell.querySelector<HTMLElement>(':scope > .table-cell-wrapper') ?? cell;
 			const s = getComputedStyle(content);
 			// Live Preview pads the wrapper rather than the cell: count both.
 			const chromePx = cellChromePx(cell) + (content === cell ? 0 : cellChromePx(content));
-			kind = { font: `${s.fontStyle} ${s.fontWeight} ${s.fontSize} ${s.fontFamily}`, chromePx };
+			kind = hasTextEffects(s)
+				? null
+				: { font: `${s.fontStyle} ${s.fontWeight} ${s.fontSize} ${s.fontFamily}`, chromePx };
 			kinds.set(cell.tagName, kind);
 		}
+		if (!kind) return null;
 		ctx.font = kind.font;
 		const text = measureTextLines(lines, (t) => ctx.measureText(t).width);
 		minPx = Math.max(minPx, text.minPx + kind.chromePx);
