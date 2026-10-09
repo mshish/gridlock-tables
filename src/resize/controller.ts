@@ -10,6 +10,7 @@ import {
 	Tap,
 	autoFitCh,
 	dragWidthCh,
+	freezeColumns,
 	isDoubleTap,
 	pinColumn,
 	pxToCh,
@@ -196,7 +197,7 @@ export class ResizeController {
 		const count = headerCells(table).length;
 		const chPx = chWidthPx(table);
 		const startCh = pxToCh(cell.getBoundingClientRect().width, chPx);
-		const base: PinnedWidths = this.host.store.get(key) ?? [];
+		const base = this.frozenWidths(table, key, chPx);
 		const container = scrollContainer(table);
 		let moved = false;
 
@@ -285,7 +286,16 @@ export class ResizeController {
 			},
 		);
 		const count = headerCells(table).length;
-		this.save(key, pinColumn(this.host.store.get(key) ?? [], col, width, count));
+		this.save(key, pinColumn(this.frozenWidths(table, key, chPx), col, width, count));
+	}
+
+	/**
+	 * The table's pins with every unpinned column fixed at its rendered width,
+	 * so resizing one column leaves the others as they are on screen.
+	 */
+	private frozenWidths(table: HTMLTableElement, key: string, chPx: number): PinnedWidths {
+		const rendered = columnWidthsPx(table).map((px) => pxToCh(px, chPx));
+		return freezeColumns(this.host.store.get(key) ?? [], rendered, rendered.length);
 	}
 
 	/** Store a table's pins and show them on every open copy of that table. */
