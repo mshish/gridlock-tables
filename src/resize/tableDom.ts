@@ -92,7 +92,7 @@ export function applyWidths(table: HTMLTableElement, widths: PinnedWidths | unde
 export function stripTable(table: HTMLTableElement) {
 	table.querySelectorAll(`.${HANDLE_CLASS}`).forEach((h) => h.remove());
 	table.querySelector(`:scope > colgroup.${COLGROUP_CLASS}`)?.remove();
-	table.removeClasses([PINNED_CLASS, MEASURE_MAX_CLASS, MEASURE_MIN_CLASS]);
+	table.removeClasses([PINNED_CLASS, MEASURE_MAX_CLASS, MEASURE_MIN_CLASS, EDGE_HOVER_CLASS]);
 	table.removeAttribute(KEY_ATTR);
 	scrollContainer(table)?.removeClass(RESIZING_CLASS);
 }

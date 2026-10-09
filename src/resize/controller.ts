@@ -143,6 +143,7 @@ export class ResizeController {
 	onPointerDown = (evt: PointerEvent) => {
 		this.edgeGestureTable = null;
 		let handle = handleOf(evt.target);
+		let edgeTable: HTMLTableElement | null = null;
 		if (!handle && evt.pointerType === 'mouse') {
 			// With a mouse a column edge can be grabbed in any row; it drives the
 			// same gesture as that column's header handle. Touch keeps to the
@@ -150,12 +151,13 @@ export class ResizeController {
 			const edge = edgeAt(evt.target, evt.clientX);
 			const header = edge ? headerCells(edge.table)[edge.col] : undefined;
 			handle = header?.querySelector<HTMLElement>(`:scope > .${HANDLE_CLASS}`) ?? null;
-			if (handle && edge) this.edgeGestureTable = edge.table;
+			if (handle && edge) edgeTable = edge.table;
 		}
 		const cell = handle?.parentElement;
 		const table = handle?.closest('table');
 		if (!handle || !cell || !table || !isActiveTable(table)) return;
 		if (!startsGesture(evt)) return;
+		this.edgeGestureTable = edgeTable;
 		evt.preventDefault();
 		evt.stopPropagation();
 		this.startGesture(evt, handle, cell, table);
@@ -166,10 +168,14 @@ export class ResizeController {
 	 * widget, and the clicks that follow grabbing an edge in a body row.
 	 */
 	swallow = (evt: Event) => {
-		const target = evt.target as Node | null;
-		if (handleOf(evt.target) || (this.edgeGestureTable && target && this.edgeGestureTable.contains(target))) {
+		if (handleOf(evt.target)) {
 			evt.stopPropagation();
+			return;
 		}
+		// A keyboard-activated click has detail 0 and no pointerdown before it.
+		const target = evt.target as Node | null;
+		const fromPointer = (evt as UIEvent).detail > 0;
+		if (fromPointer && target && this.edgeGestureTable?.contains(target)) evt.stopPropagation();
 	};
 
 	/** Show the resize cursor while a mouse is over a column edge in any row. */
