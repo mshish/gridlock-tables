@@ -18,6 +18,82 @@
  *                   > .cm-contentContainer > .cm-content > .cm-table-widget
  */
 
+/* @settings
+
+name: Gridlock Tables
+id: gridlock-tables
+settings:
+    -
+        id: gridlock-table-font
+        title: Table font
+        description: Font for table text, as a CSS font-family list. Leave empty to use the note's font.
+        type: variable-text
+        default: ''
+        quotes: false
+    -
+        id: gridlock-header-font
+        title: Header font
+        description: Font for header cells. Leave empty to use the table font.
+        type: variable-text
+        default: ''
+        quotes: false
+    -
+        id: gridlock-text-size
+        title: Text size
+        type: variable-number-slider
+        default: 16
+        min: 10
+        max: 24
+        step: 1
+        format: px
+    -
+        id: gridlock-header-size
+        title: Header text size
+        type: variable-number-slider
+        default: 16
+        min: 10
+        max: 24
+        step: 1
+        format: px
+    -
+        id: gridlock-header-weight
+        title: Header weight
+        type: variable-select
+        default: '600'
+        options:
+            - '400'
+            - '500'
+            - '600'
+            - '700'
+    -
+        id: gridlock-line-height
+        title: Line height
+        type: variable-number-slider
+        default: 1.3
+        min: 1
+        max: 2
+        step: 0.05
+    -
+        id: gridlock-cell-padding-y
+        title: Cell padding, top and bottom
+        type: variable-number-slider
+        default: 0.25
+        min: 0
+        max: 1
+        step: 0.05
+        format: em
+    -
+        id: gridlock-cell-padding-x
+        title: Cell padding, left and right
+        type: variable-number-slider
+        default: 0.5
+        min: 0
+        max: 1.5
+        step: 0.05
+        format: em
+
+*/
+
 /*
  * Clamped column widths, set on the table containers so an opted-out note's
  * tables inherit Obsidian's own values. The plugin sets --gridlock-col-min/max
@@ -27,6 +103,48 @@ body.gridlock-tables-enabled .markdown-preview-view:not(.gridlock-tables-off) > 
 body.gridlock-tables-enabled .markdown-source-view.mod-cm6:not(.gridlock-tables-off) > .cm-editor > .cm-scroller > .cm-sizer > .cm-contentContainer > .cm-content > .cm-table-widget {
 	--table-column-min-width: var(--gridlock-col-min, 6ch);
 	--table-column-max-width: var(--gridlock-col-max, 60ch);
+}
+
+/*
+ * Text style, from the Style Settings block above. Style Settings sets a
+ * --gridlock-* variable only once the user changes that option; until then
+ * each declaration falls back to what Obsidian already uses, so tables look
+ * unchanged. The table itself carries the body font and size: <col> widths
+ * are in ch, which resolves against the table's font, so pinned columns scale
+ * with the text. With the variable unset, font-family and font-size there are
+ * invalid at computed-value time and act as inherit, which is what the table
+ * gets without these rules. Both views put the table under .markdown-rendered,
+ * where Obsidian styles td and th; Live Preview pads .table-cell-wrapper
+ * instead of the cell.
+ */
+body.gridlock-tables-enabled .markdown-preview-view:not(.gridlock-tables-off) > .markdown-preview-sizer > .el-table > table,
+body.gridlock-tables-enabled .markdown-source-view.mod-cm6:not(.gridlock-tables-off) > .cm-editor > .cm-scroller > .cm-sizer > .cm-contentContainer > .cm-content > .cm-table-widget > .table-wrapper > table {
+	font-family: var(--gridlock-table-font);
+	font-size: var(--gridlock-text-size);
+	line-height: var(--gridlock-line-height, var(--table-line-height));
+}
+
+body.gridlock-tables-enabled .markdown-preview-view:not(.gridlock-tables-off) > .markdown-preview-sizer > .el-table > table td,
+body.gridlock-tables-enabled .markdown-source-view.mod-cm6:not(.gridlock-tables-off) > .cm-editor > .cm-scroller > .cm-sizer > .cm-contentContainer > .cm-content > .cm-table-widget > .table-wrapper > table td {
+	font-size: var(--gridlock-text-size, var(--table-text-size));
+}
+
+body.gridlock-tables-enabled .markdown-preview-view:not(.gridlock-tables-off) > .markdown-preview-sizer > .el-table > table th,
+body.gridlock-tables-enabled .markdown-source-view.mod-cm6:not(.gridlock-tables-off) > .cm-editor > .cm-scroller > .cm-sizer > .cm-contentContainer > .cm-content > .cm-table-widget > .table-wrapper > table th {
+	font-family: var(--gridlock-header-font, var(--table-header-font));
+	/* Obsidian's header size defaults to the body size, so headers follow Text size. */
+	font-size: var(--gridlock-header-size, var(--gridlock-text-size, var(--table-header-size)));
+	font-weight: var(--gridlock-header-weight, var(--table-header-weight));
+}
+
+body.gridlock-tables-enabled .markdown-preview-view:not(.gridlock-tables-off) > .markdown-preview-sizer > .el-table > table :is(th, td),
+body.gridlock-tables-enabled .markdown-source-view.mod-cm6:not(.gridlock-tables-off) > .cm-editor > .cm-scroller > .cm-sizer > .cm-contentContainer > .cm-content > .cm-table-widget > .table-wrapper > table .table-cell-wrapper {
+	padding: var(--gridlock-cell-padding-y, var(--size-2-2)) var(--gridlock-cell-padding-x, var(--size-4-2));
+}
+
+/* Obsidian sets the line height of the editor inside a Live Preview cell being edited. */
+body.gridlock-tables-enabled .markdown-source-view.mod-cm6:not(.gridlock-tables-off) > .cm-editor > .cm-scroller > .cm-sizer > .cm-contentContainer > .cm-content > .cm-table-widget .cm-scroller {
+	line-height: var(--gridlock-line-height, var(--table-line-height));
 }
 
 /*

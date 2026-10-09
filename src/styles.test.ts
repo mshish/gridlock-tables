@@ -56,6 +56,14 @@ describe('styles.css', () => {
 		expect(tableRules.filter((s) => !RV_PATH.test(s) && !LP_PATH.test(s))).toEqual([]);
 	});
 
+	it('uses every Style Settings variable in a rule', () => {
+		const block = /\/\* @settings([\s\S]*?)\*\//.exec(css)?.[1] ?? '';
+		const ids = [...block.matchAll(/^\s+id: (\S+)$/gm)].map((m) => m[1]).filter((id) => id !== 'gridlock-tables');
+		expect(ids.length).toBeGreaterThan(0);
+		const rules = css.replace(/\/\*[\s\S]*?\*\//g, '');
+		expect(ids.filter((id) => !rules.includes(`var(--${id}`))).toEqual([]);
+	});
+
 	it('lets wide tables break out past the readable line', () => {
 		expect(css).toContain(
 			'max-width: calc((100cqw - min(var(--file-line-width), 100cqw)) / 2 + 100%)',
