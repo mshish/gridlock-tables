@@ -1,7 +1,7 @@
 {
 	"id": "gridlock-tables",
 	"name": "Gridlock Tables",
-	"version": "0.1.0-beta.1",
+	"version": "0.1.0-beta.2",
 	"minAppVersion": "1.14.4",
 	"description": "Content-sized table columns, overflow-only horizontal scroll, and pinned manual widths. OneNote-style tables in Reading view and Live Preview.",
 	"author": "Michael Sciscenti",
