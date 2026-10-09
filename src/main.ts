@@ -3,7 +3,7 @@ import { ResizeController } from './resize/controller';
 import { hideWidthComments } from './resize/hideComments';
 import { livePreviewExtension } from './resize/livePreview';
 import { readingViewProcessor } from './resize/readingView';
-import { ENABLED_CLASS } from './scope';
+import { ENABLED_CLASS, HIDE_COMMENTS_CLASS } from './scope';
 import {
 	DEFAULT_SETTINGS,
 	GridlockTablesSettings,
@@ -35,7 +35,7 @@ export default class GridlockTablesPlugin extends Plugin {
 		await this.loadSettings();
 		this.addSettingTab(new GridlockTablesSettingTab(this.app, this));
 		this.register(() => {
-			document.body.classList.remove(ENABLED_CLASS);
+			document.body.classList.remove(ENABLED_CLASS, HIDE_COMMENTS_CLASS);
 			document.body.style.removeProperty(COLUMN_MIN_VAR);
 			document.body.style.removeProperty(COLUMN_MAX_VAR);
 		});
@@ -95,6 +95,7 @@ export default class GridlockTablesPlugin extends Plugin {
 	 */
 	applyEnabledState() {
 		document.body.classList.toggle(ENABLED_CLASS, this.settings.enabled);
+		document.body.classList.toggle(HIDE_COMMENTS_CLASS, this.settings.hideWidthComments);
 		const vars = columnLimitVars(
 			this.settings.columnMinCh,
 			this.settings.columnMaxCh,

@@ -18,6 +18,8 @@ export interface GridlockTablesSettings {
 	 * the table, 'plugin' keeps them in this plugin's data only.
 	 */
 	widthStorage: WidthStorage;
+	/** Live Preview hides gridlock-cols comments until the cursor reaches them. */
+	hideWidthComments: boolean;
 }
 
 export type WidthStorage = 'note' | 'plugin';
@@ -27,6 +29,7 @@ export const DEFAULT_SETTINGS: GridlockTablesSettings = {
 	columnMinCh: DEFAULT_COLUMN_MIN_CH,
 	columnMaxCh: DEFAULT_COLUMN_MAX_CH,
 	widthStorage: 'note',
+	hideWidthComments: true,
 };
 
 type SettingKey = keyof GridlockTablesSettings;
@@ -91,6 +94,15 @@ export class GridlockTablesSettingTab extends PluginSettingTab {
 					options: { note: 'In the note', plugin: 'In plugin data' },
 				},
 			},
+			{
+				name: 'Hide width comments in Live Preview',
+				desc: 'Hides the gridlock-cols comment above a resized table until the cursor is on it. Source mode always shows it.',
+				control: {
+					type: 'toggle',
+					key: 'hideWidthComments',
+					defaultValue: DEFAULT_SETTINGS.hideWidthComments,
+				},
+			},
 		];
 	}
 
@@ -105,6 +117,8 @@ export class GridlockTablesSettingTab extends PluginSettingTab {
 			this.plugin.settings[key] = Number(value);
 		} else if (key === 'widthStorage') {
 			this.plugin.settings.widthStorage = value === 'plugin' ? 'plugin' : 'note';
+		} else if (key === 'hideWidthComments') {
+			this.plugin.settings.hideWidthComments = Boolean(value);
 		}
 		await this.plugin.saveSettings();
 		this.plugin.applyEnabledState();
