@@ -64,11 +64,15 @@ describe('widthsFromComments', () => {
 
 describe('widthCommentRanges', () => {
 	it('covers each comment and its blank line, up to the table', () => {
-		const lines = ['Intro', '<!-- gridlock-cols: 10ch auto auto -->', '', ...TABLE, '', '<!-- gridlock-cols: 4ch -->', ...TABLE];
+		const lines = ['Intro', '<!-- gridlock-cols: 10ch auto auto -->', '', ...TABLE, '', '<!-- gridlock-cols: 4ch -->', '', ...TABLE];
 		expect(widthCommentRanges(lines)).toEqual([
 			{ from: 1, to: 2 },
-			{ from: 7, to: 7 },
+			{ from: 7, to: 8 },
 		]);
+	});
+
+	it('leaves out a comment directly above its table', () => {
+		expect(widthCommentRanges(['<!-- gridlock-cols: 4ch auto auto -->', ...TABLE])).toEqual([]);
 	});
 
 	it('leaves out other comments, malformed ones and comments away from a table', () => {

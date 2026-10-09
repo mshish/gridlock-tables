@@ -29,10 +29,13 @@ class HideWidthComments implements PluginValue {
 		if (this.ranges?.doc !== doc) {
 			this.ranges = { doc, lines: widthCommentRanges(doc.toString().split('\n')) };
 		}
-		const selected = view.state.selection.ranges.map((r) => ({
-			from: doc.lineAt(r.from).number - 1,
-			to: doc.lineAt(r.to).number - 1,
-		}));
+		const selected = view.state.selection.ranges.map((r) => {
+			const end = doc.lineAt(r.to);
+			// A selection that ends at the start of a line (a triple-click selects
+			// the line and its line break) does not reach into that line.
+			const last = !r.empty && r.to === end.from ? end.number - 2 : end.number - 1;
+			return { from: doc.lineAt(r.from).number - 1, to: Math.max(last, doc.lineAt(r.from).number - 1) };
+		});
 		const builder = new RangeSetBuilder<Decoration>();
 		for (const n of untouchedLines(this.ranges.lines, selected)) {
 			const line = doc.line(n + 1);

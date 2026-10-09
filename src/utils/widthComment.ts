@@ -65,15 +65,16 @@ export interface LineRange {
 }
 
 /**
- * The lines of each table's gridlock-cols comment: the comment itself through
- * the line before the table, so its blank line too. Malformed comments are
- * left out.
+ * The lines of each table's gridlock-cols comment: the comment and the blank
+ * line between it and the table. Malformed comments are left out, and so is a
+ * comment directly above its table: Live Preview then shows the table as
+ * plain text, and the comment is the visible reason why.
  */
 export function widthCommentRanges(lines: readonly string[]): LineRange[] {
 	const out: LineRange[] = [];
 	for (const start of tableStartLines(lines)) {
 		const at = commentLine(lines, start);
-		if (at >= 0 && parseWidthComment(lines[at] ?? '')) out.push({ from: at, to: start - 1 });
+		if (at >= 0 && at === start - 2 && parseWidthComment(lines[at] ?? '')) out.push({ from: at, to: start - 1 });
 	}
 	return out;
 }
