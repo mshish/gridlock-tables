@@ -30,6 +30,8 @@ export default class GridlockTablesPlugin extends Plugin {
 	private records!: RecordWidthStore;
 	private widths!: NoteWidthStore;
 	private resize!: ResizeController;
+	/** The enabled state last applied, so a re-render runs only on switching back on. */
+	private wasEnabled = false;
 
 	async onload() {
 		await this.loadSettings();
@@ -41,6 +43,26 @@ export default class GridlockTablesPlugin extends Plugin {
 		});
 		this.applyEnabledState();
 		this.loadResize();
+		this.wasEnabled = this.settings.enabled;
+		// At app start Obsidian loads plugins before it restores the layout, so
+		// those notes render with the post-processor. A plugin loaded later (an
+		// update or a re-enable) finds notes already rendered: render them again.
+		if (this.app.workspace.layoutReady && this.settings.enabled) this.rerenderReadingViews();
+	}
+
+	/**
+	 * Render every open Reading view from scratch so the post-processor runs on
+	 * its tables. rerender(true) is not enough: it reuses sections it has already
+	 * rendered, so their tables keep the state from before (no handles or pins).
+	 */
+	private rerenderReadingViews() {
+		this.app.workspace.iterateAllLeaves((leaf) => {
+			if (!(leaf.view instanceof MarkdownView) || leaf.view.getMode() !== 'preview') return;
+			const preview = leaf.view.previewMode;
+			const scroll = preview.getScroll();
+			preview.set(leaf.view.getViewData(), true);
+			preview.applyScroll(scroll);
+		});
 	}
 
 	private loadResize() {
@@ -104,10 +126,15 @@ export default class GridlockTablesPlugin extends Plugin {
 			document.body.style.setProperty(name, value);
 		}
 		if (!this.resize) return;
+		const turnedOn = this.settings.enabled && !this.wasEnabled;
+		this.wasEnabled = this.settings.enabled;
 		if (this.settings.enabled) {
-			this.app.workspace.iterateAllLeaves((leaf) => {
-				if (leaf.view instanceof MarkdownView) leaf.view.previewMode.rerender(true);
-			});
+			// Only switching the plugin back on needs Reading view rendered again.
+			// Every other setting is CSS (column limits, hidden comments) or applies
+			// to the next save (width storage). rerender(true) here would also be
+			// harmful: it redraws sections from cache without the post-processor,
+			// which drops their resize handles.
+			if (turnedOn) this.rerenderReadingViews();
 			this.resize.refreshEditors();
 		} else {
 			this.resize.stripEverywhere();
