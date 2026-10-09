@@ -35,9 +35,12 @@ export function clampCol(
 	globalMinCh = DEFAULT_MIN_CH,
 	globalMaxCh = DEFAULT_MAX_CH,
 ): ColSpec {
+	const maxCh = Math.min(Math.max(measured.maxCh, globalMinCh), globalMaxCh);
 	return {
-		minCh: Math.max(measured.minCh, globalMinCh),
-		maxCh: Math.min(Math.max(measured.maxCh, globalMinCh), globalMaxCh),
+		// An unbreakable string (a long URL) has a min-content as wide as itself;
+		// capping min at max keeps globalMaxCh a hard ceiling when space is tight.
+		minCh: Math.min(Math.max(measured.minCh, globalMinCh), maxCh),
+		maxCh,
 	};
 }
 

@@ -4,6 +4,7 @@
  * can restore the native table exactly.
  */
 import { PinnedWidths, colgroupWidths, hasPins } from '../utils/columnWidths';
+import { measureTextLines } from '../utils/textMetrics';
 import { ENABLED_CLASS } from '../scope';
 
 export const HANDLE_CLASS = 'gridlock-col-resize';
@@ -138,6 +139,63 @@ export function measureColumnPx(table: HTMLTableElement, cell: HTMLElement): { m
 	const minPx = cell.getBoundingClientRect().width;
 	table.removeClass(MEASURE_MIN_CLASS);
 	if (pinned) table.addClass(PINNED_CLASS);
+	return { minPx, maxPx };
+}
+
+/**
+ * A cell's text, one string per line, when it is plain text: only text and
+ * line breaks, no links, code, math or other inline elements. Null otherwise.
+ * Live Preview wraps a cell's content in .table-cell-wrapper; the resize
+ * handle and Obsidian's own drag handles sit outside it.
+ */
+function plainTextLines(cell: HTMLTableCellElement): string[] | null {
+	const content = cell.querySelector<HTMLElement>(':scope > .table-cell-wrapper') ?? cell;
+	const lines = [''];
+	for (const node of Array.from(content.childNodes)) {
+		if (node.nodeType === Node.TEXT_NODE) {
+			lines[lines.length - 1] += node.textContent ?? '';
+		} else if (node.nodeName === 'BR') {
+			lines.push('');
+		} else if (!(node.instanceOf(HTMLElement) && node.hasClass(HANDLE_CLASS))) {
+			return null;
+		}
+	}
+	return lines;
+}
+
+/**
+ * Min-content and max-content width of one column, in px, measured with
+ * canvas measureText in each cell's font, so the table is not reflowed.
+ * Null when any cell in the column holds more than plain text; measure those
+ * with measureColumnPx instead.
+ */
+export function measureColumnText(table: HTMLTableElement, col: number): { minPx: number; maxPx: number } | null {
+	canvas ??= createEl('canvas');
+	const ctx = canvas.getContext('2d');
+	if (!ctx) return null;
+	// Header and body cells differ in font and padding; rows of one kind do not.
+	const kinds = new Map<string, { font: string; chromePx: number }>();
+	let minPx = 0;
+	let maxPx = 0;
+	for (const row of Array.from(table.rows)) {
+		const cell = row.cells[col];
+		if (!cell) continue;
+		const lines = plainTextLines(cell);
+		if (!lines) return null;
+		let kind = kinds.get(cell.tagName);
+		if (!kind) {
+			const content = cell.querySelector<HTMLElement>(':scope > .table-cell-wrapper') ?? cell;
+			const s = getComputedStyle(content);
+			// Live Preview pads the wrapper rather than the cell: count both.
+			const chromePx = cellChromePx(cell) + (content === cell ? 0 : cellChromePx(content));
+			kind = { font: `${s.fontStyle} ${s.fontWeight} ${s.fontSize} ${s.fontFamily}`, chromePx };
+			kinds.set(cell.tagName, kind);
+		}
+		ctx.font = kind.font;
+		const text = measureTextLines(lines, (t) => ctx.measureText(t).width);
+		minPx = Math.max(minPx, text.minPx + kind.chromePx);
+		maxPx = Math.max(maxPx, text.maxPx + kind.chromePx);
+	}
 	return { minPx, maxPx };
 }
 

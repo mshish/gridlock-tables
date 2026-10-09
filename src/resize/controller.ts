@@ -30,6 +30,7 @@ import {
 	headerCells,
 	isActiveTable,
 	measureColumnPx,
+	measureColumnText,
 	scrollContainer,
 	stripAll,
 } from './tableDom';
@@ -217,7 +218,9 @@ export class ResizeController {
 	/** Pin a column to its content width, per the autoSize distribution. */
 	private autoFit(table: HTMLTableElement, cell: HTMLElement, col: number, key: string) {
 		const chPx = chWidthPx(table);
-		const { minPx, maxPx } = measureColumnPx(table, cell);
+		// Plain-text columns are measured without reflowing the table; a column
+		// with links, code or other inline markup is laid out and read instead.
+		const { minPx, maxPx } = measureColumnText(table, col) ?? measureColumnPx(table, cell);
 		// Measurements are border-box; the setting limits are content-box.
 		const chromeCh = pxToCh(cellChromePx(cell), chPx);
 		const othersPx = columnWidthsPx(table).reduce((sum, w, i) => (i === col ? sum : sum + w), 0);

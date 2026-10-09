@@ -61,3 +61,20 @@ describe('distributeWidths', () => {
 		expect(total).toBeCloseTo(available);
 	});
 });
+
+describe('long unbreakable content', () => {
+	it('clampCol never leaves min above the global max', () => {
+		expect(clampCol({ minCh: 200, maxCh: 200 }, 6, 60)).toEqual({ minCh: 60, maxCh: 60 });
+	});
+
+	it('a long-URL column stays at the global max even when space is tight', () => {
+		const result = distributeWidths(
+			[
+				{ minCh: 10, maxCh: 10 },
+				{ minCh: 200, maxCh: 200 },
+			],
+			{ availableCh: 30, globalMinCh: 6, globalMaxCh: 60 },
+		);
+		expect(result[1]).toBe(60);
+	});
+});
