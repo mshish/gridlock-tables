@@ -31,3 +31,37 @@ body.gridlock-tables-enabled :where(.markdown-rendered, .cm-table-widget) :where
 body.gridlock-tables-enabled .markdown-source-view.mod-cm6 .cm-table-widget :is(th, td) {
 	max-width: var(--table-column-max-width);
 }
+
+/*
+ * Overflow-only breakout. Obsidian already wraps every table in its own
+ * horizontal scroll container (.el-table in Reading view, .cm-table-widget in
+ * Live Preview) but sizes it to the readable line. Here the container shrinks
+ * to the table and may grow rightward up to the pane's inner edge; past that,
+ * the table scrolls inside its own container.
+ *
+ * The pane's scroll element is the query container, so 100cqw is the width
+ * the readable column (min(--file-line-width, 100cqw), Obsidian's sizer) is
+ * centred in. The free space right of the column is half the difference;
+ * adding 100% (the container's own containing block, which ends at the
+ * column's right edge) gives the room up to the pane's inner edge. That holds
+ * when the LP line-number gutter narrows the content inside the column.
+ * Without readable line length there is no free space, so nothing changes.
+ * Only the outer editor scroller is a container: the LP widget's cells are
+ * CodeMirror editors with scrollers of their own.
+ */
+body.gridlock-tables-enabled .markdown-preview-view,
+body.gridlock-tables-enabled .markdown-source-view.mod-cm6 > .cm-editor > .cm-scroller {
+	container-type: inline-size;
+}
+
+body.gridlock-tables-enabled .markdown-preview-view.is-readable-line-width .el-table {
+	width: max-content;
+	max-width: calc((100cqw - min(var(--file-line-width), 100cqw)) / 2 + 100%);
+}
+
+/* The LP widget sits var(--size-4-4) left of the text column (Obsidian's
+ * negative margin for its drag handles), so it gets that much more room. */
+body.gridlock-tables-enabled .markdown-source-view.mod-cm6.is-readable-line-width .cm-content > .cm-table-widget {
+	width: max-content;
+	max-width: calc((100cqw - min(var(--file-line-width), 100cqw)) / 2 + 100% + var(--size-4-4));
+}
