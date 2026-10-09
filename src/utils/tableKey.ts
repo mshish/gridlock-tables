@@ -78,6 +78,14 @@ export function tableKey(path: string, index: number): string {
 	return `${path}#${index}`;
 }
 
+/** The path and table index in a tableKey(), or null if it is not one. */
+export function parseTableKey(key: string): { path: string; index: number } | null {
+	const at = key.lastIndexOf('#');
+	const digits = key.slice(at + 1);
+	if (at <= 0 || !/^\d+$/.test(digits)) return null;
+	return { path: key.slice(0, at), index: Number(digits) };
+}
+
 /** Move a file's table keys to its new path, or drop them when newPath is null. */
 export function renameTableKeys<T>(
 	record: Record<string, T>,

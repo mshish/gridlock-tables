@@ -15,6 +15,7 @@ import {
 	pxToCh,
 } from '../utils/columnWidths';
 import { gestureEnd, startsGesture } from '../utils/gesture';
+import { parseTableKey } from '../utils/tableKey';
 import { WidthStore } from '../utils/widthStore';
 import {
 	HANDLE_CLASS,
@@ -65,6 +66,45 @@ export class ResizeController {
 
 	decorate(table: HTMLTableElement, key: string) {
 		decorateTable(table, key, this.dragging.get(table) ?? this.host.store.get(key));
+	}
+
+	/** Give the store a note's current source, before its tables are decorated. */
+	observeSource(path: string, lines: readonly string[]) {
+		this.host.store.observe?.(path, lines);
+	}
+
+	/**
+	 * A note changed on disk: re-read its widths and re-apply them to every open
+	 * copy of its tables. Reading view only re-renders the sections that changed,
+	 * so a table whose comment was edited elsewhere would otherwise keep stale
+	 * widths.
+	 */
+	/** True when a decorated table of this note is open in a Reading view. */
+	showsInReadingView(path: string): boolean {
+		let shown = false;
+		this.host.forEachViewRoot((root) => {
+			if (shown) return;
+			root.querySelectorAll(`.markdown-preview-view table[${KEY_ATTR}]`).forEach((table) => {
+				if (parseTableKey(table.getAttribute(KEY_ATTR) ?? '')?.path === path) shown = true;
+			});
+		});
+		return shown;
+	}
+
+	refreshSource(path: string, lines: readonly string[]) {
+		this.observeSource(path, lines);
+		this.reapply(path);
+	}
+
+	/** Re-apply the stored widths to every open copy of a note's tables. */
+	reapply(path: string) {
+		this.host.forEachViewRoot((root) => {
+			root.querySelectorAll<HTMLTableElement>(`table[${KEY_ATTR}]`).forEach((table) => {
+				const key = table.getAttribute(KEY_ATTR);
+				if (!key || parseTableKey(key)?.path !== path || this.dragging.has(table)) return;
+				applyWidths(table, this.host.store.get(key));
+			});
+		});
 	}
 
 	/** Re-decorate every Live Preview editor; Reading view re-renders itself. */

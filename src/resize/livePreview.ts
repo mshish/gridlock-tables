@@ -71,7 +71,10 @@ class LivePreviewResize implements PluginValue {
 		if (!widget) return -1;
 		const doc = this.view.state.doc;
 		if (this.starts?.doc !== doc) {
-			this.starts = { doc, lines: tableStartLines(doc.toString().split('\n')) };
+			const lines = doc.toString().split('\n');
+			this.starts = { doc, lines: tableStartLines(lines) };
+			const path = this.view.state.field(editorInfoField, false)?.file?.path;
+			if (path) this.controller.observeSource(path, lines);
 		}
 		let line: number;
 		try {
