@@ -1,7 +1,7 @@
 # Gridlock Tables -- dev fixture
 
 Use this note to manually verify Live Preview and Reading view behavior.
-Copy it to your vault: `D:\Obsidian\Personal\gridlock-dev-fixture.md`
+Copy it into your Obsidian vault as `gridlock-dev-fixture.md`.
 
 ## Narrow table (fits in readable column)
 
